@@ -24,10 +24,11 @@ namespace MapImageTileTool
         {
             StringBuilder sb = new StringBuilder();
             StringWriter sw = new StringWriter(sb);
-            JObject mapSetInfo;
-            //MapInfo currMapInfo;
+            JObject mapsInfo;
+            JArray mapArray;
+            string mapInfoPath;
 
-            //select map depo
+            // select map depo
             Console.Write("Name of Map Folder: ");
             string depoName = Console.ReadLine();
 
@@ -46,7 +47,6 @@ namespace MapImageTileTool
                 {
                     Directory.CreateDirectory(depoName);
                     Directory.SetCurrentDirectory(depoName);
-                    //MapInfo emptyMapInfo = new MapInfo();
                     File.WriteAllText(@"MapInfo.JSON", "{\nMaps:[]\n}");
                 }
                 else
@@ -55,10 +55,17 @@ namespace MapImageTileTool
                 }
             }
 
+            // sets path to be used later as maps are added 
+            mapInfoPath = Path.GetFullPath(@"MapInfo.JSON");
+
+            // gets array for map info appending
             using (StreamReader reader = File.OpenText(@"MapInfo.JSON"))
             {
-                mapSetInfo = (JObject)JToken.ReadFrom(new JsonTextReader(reader));
+                mapsInfo = (JObject)JToken.ReadFrom(new JsonTextReader(reader));
+                mapArray = (JArray)mapsInfo["Maps"];
             }
+
+            
 
             int menuSelection = 0;
 
@@ -70,7 +77,7 @@ namespace MapImageTileTool
                 Console.WriteLine("3: Exit");
 
                 menuSelection = Convert.ToInt32(Console.ReadLine());
-                if (menuSelection < 0 || menuSelection > 3)
+                if (menuSelection < 1 || menuSelection > 3)
                 {
                     Console.WriteLine("Enter a valid menu option.");
                 }
@@ -84,7 +91,9 @@ namespace MapImageTileTool
 
                             // make sure Map Folder can be used, and write the selected image to tiles
                             if (GetMapFolder(fileName))
-                                WriteMapTiles(fileName, mapSetInfo);
+                            {
+                                WriteMapTiles(fileName, mapInfoPath, mapArray);
+                            }
 
                             break;
                         case 2:
@@ -97,21 +106,11 @@ namespace MapImageTileTool
                     }
                 }
             }
-
-            // select map depo
-            // add new map
-            // map gets tiled and named, put into folder
-
-            // select map folder
-            // generate JSON string with file names, width, height, depth and current displayed board
-            // write new JSON file
         }
 
         // returns 'true' if image and its associated map folder exists, 'false' if it doesn't exist, and 'false' if the file is not allowed to be overwritten
         static bool GetMapFolder(string fileName)
         {
-            Console.Write("Select image file in folder: ");
-
             // check file name
             if (File.Exists(fileName + ".png"))
             {
@@ -143,7 +142,7 @@ namespace MapImageTileTool
         }
 
         // writeMapTiles creates the image tiles and writes the MapInfo to the JSON file
-        static void WriteMapTiles(string fileName, JObject mapSetInfo)
+        static void WriteMapTiles(string fileName, string mapInfoPath, JArray mapArray)
         {
             Console.Write("Width: ");
             int width = Convert.ToInt32(Console.ReadLine());
@@ -154,17 +153,15 @@ namespace MapImageTileTool
             Console.Write("Scale amount: ");
             decimal scale = Convert.ToInt32(Console.ReadLine());
 
-            Console.WriteLine("\n - Map Offsets - \n");
-
-            Console.Write("Selected Map X: ");
+            Console.Write("Selected Map Offset (X): ");
             int mapX = Convert.ToInt32(Console.ReadLine());
 
-            Console.Write("Selected Map Y: ");
+            Console.Write("Selected Map Offset (Y): ");
             int mapY = Convert.ToInt32(Console.ReadLine());
-
-
+            
             MapInfo mapInfo = new MapInfo()
             {
+                MapName = fileName,
                 Width = width,
                 Height = height,
                 Scale = scale,
@@ -172,16 +169,26 @@ namespace MapImageTileTool
                 OffsetY = mapY
             };
 
-            JArray JSONmapArray = (JArray)mapSetInfo["Maps"];
-            JSONmapArray.Add(JsonConvert.SerializeObject(mapInfo));
+            // makes object into string and adds it to suppied array
+            // needs to overwrite map data if the map tiles are being overwritten
+            string mapInfoJSON = JsonConvert.SerializeObject(mapInfo, Formatting.Indented);
+            mapArray.Add(mapInfoJSON);
 
-            /*
+            // deletes all files before making new ones in directory
+            // this is probably dangerous, needs backup procedure
+            DirectoryInfo dir = new DirectoryInfo(fileName + " Maps");
+            foreach (FileInfo file in dir.GetFiles())
+            {
+                file.Delete();
+            }
 
+            // tiles map, needs to have resizing options to maintain aspect ratio
+            // probably needs PPI adjusting options too
             using (FileStream pngStream = new FileStream(fileName + ".png", FileMode.Open, FileAccess.Read))
             using (var image = new Bitmap(pngStream))
             {
                 Directory.SetCurrentDirectory(fileName + " Maps");
-                System.Drawing.Imaging.PixelFormat format = image.PixelFormat;
+                PixelFormat format = image.PixelFormat;
                 for (int i = 0; i < width; i++)
                 {
                     for (int j = 0; j < height; j++)
@@ -193,7 +200,13 @@ namespace MapImageTileTool
                 }
             }
 
-            */
+            using (StreamWriter file = new StreamWriter(mapInfoPath))
+            using (JsonTextWriter writer = new JsonTextWriter(file))
+            {
+                // write full mapArray to file
+                // needs to not have formatting characters and perserve original file layout
+                Console.WriteLine(mapArray.ToString());
+            }
         }
     }
 }
