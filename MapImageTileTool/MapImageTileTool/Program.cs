@@ -175,7 +175,7 @@ namespace MapImageTileTool
             mapArray.Add(mapInfoJSON);
 
             // deletes all files before making new ones in directory
-            // this is probably dangerous, needs backup procedure
+            // this is probably dangerous, needs backup procedure instead
             DirectoryInfo dir = new DirectoryInfo(fileName + " Maps");
             foreach (FileInfo file in dir.GetFiles())
             {
@@ -187,6 +187,29 @@ namespace MapImageTileTool
             using (FileStream pngStream = new FileStream(fileName + ".png", FileMode.Open, FileAccess.Read))
             using (var image = new Bitmap(pngStream))
             {
+
+                // testing resolution setting
+                int destWidth = width;
+                int destHeight = height;
+
+                // fit map by adding blank pixels, must be at least 3600 by 2400 px
+                // will need changes with custom aspect ratio, this is strict to 1800 by 1200 ratios
+                if (destWidth < 3600)
+                {
+                    destWidth = 3600;
+                }
+                if (destHeight < 2400)
+                {
+                    destHeight = 2400;
+                }
+                while (destWidth % 1800 != 0 || destHeight % 1200 != 0 || destWidth <= destHeight)
+                {
+                    if ((destWidth % 1800) != 0)
+                    {
+
+                    }
+                }
+
                 Directory.SetCurrentDirectory(fileName + " Maps");
                 PixelFormat format = image.PixelFormat;
                 for (int i = 0; i < width; i++)

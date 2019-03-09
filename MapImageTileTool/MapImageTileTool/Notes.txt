@@ -2,16 +2,19 @@
 
 
 Aspect Ratio:
+
 all maps all scales maintain aspect ratio of 18x12 (best fit for TTS's scale 18units = 1 inch)
 dimensionFactor: dimensionAspect x scale 
 stretch/compress: get both width/length and choose the one closest to their aspectFactor, change other measurement to stay in ratio
 fill: add blank pixels to complete map to fit ratio
 fill will meet default size or resolution one size above
+aspect ratio will be able to be changed when program moves away from being dependant on TTS (program settings file)
 
-5400 x 3600 (30 ppi)
-3600 x 2400 (20 ppi) - default map resolution
+5400 x 3600 
+3600 x 2400 default map resolution
 
 Adding Maps:
+
 save all map information in text file:
 
 (Map Name)
@@ -24,14 +27,23 @@ save all map information in text file:
 edit map option to change these variables or the map to tile
 
 Map Scale:
+
 maps are contained in folders, folders contain JSON file that holds scale information and map info
 going up and down a "zlevel" will go to next available scale
+scaled down maps will need offsets to fit under the grid set by the higher-scale maps
+offsets are given as map lengths (X: map widths, Y: map heights)
 
 Map Info:
+
 map sets save all the information for map and scale
 mapObjects are created when image is tiled and added to JSONArray
 
 TTS Tiling:
+
 each image has its own tile, JSON array will be used to select map, Z-level, and grid area
 main display board must be tracked and swapped
 
+Loot Generation: (MUCH LATER)
+
+importing JSON with logic to generate loot
+player-selection loot tables can be made as physical tiles in TTS
