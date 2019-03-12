@@ -11,7 +11,18 @@ fill will meet default size or resolution one size above
 aspect ratio will be able to be changed when program moves away from being dependant on TTS (program settings file)
 
 5400 x 3600 
-3600 x 2400 default map resolution
+3600 x 2400 default map resolution (200 ppi x (18x12) squares)
+
+number of scaled maps on display:
+maps that are tiled must be in correct ratio or have blank space added to end
+
+mapXBaseSize: (gridsize x ppi x (renderDistance / baseDistance))
+mapTileXSize: mapSquares x ppi / (tileScale / mapScale)
+3600px map, scale 4, distance 600ft (120sq at scale 1)
+120sq / 18sq map = 6.66 maps 
+fill: 7th map would have blank space put in %33 of map if no adjancent map
+mapTileSizePxls = mapSizePxls / (distanceSquares / mapSquares)
+
 
 Adding Maps:
 

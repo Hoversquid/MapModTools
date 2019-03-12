@@ -11,17 +11,21 @@ namespace MapImageTileTool
 {
     class MapInfo
     {
+        public enum ResizeType { None, Stretch, FillTopLeft, FillBottomLeft, FillTopRight, FillBottomRight, FillTop, FillBottom, FillLeft, FillRight };
         public string MapName { get; set; }
         public decimal Scale { get; set; }
         public int Width { get; set; }
         public int Height { get; set; }
         public int OffsetX { get; set; }
         public int OffsetY { get; set; }
+        public int DistanceX { get; set; }
+        public int DistanceY { get; set; }
     }
     class Program
     {
         static void Main(string[] args)
         {
+
             StringBuilder sb = new StringBuilder();
             StringWriter sw = new StringWriter(sb);
             JObject mapsInfo;
@@ -144,29 +148,38 @@ namespace MapImageTileTool
         // writeMapTiles creates the image tiles and writes the MapInfo to the JSON file
         static void WriteMapTiles(string fileName, string mapInfoPath, JArray mapArray)
         {
-            Console.Write("Width: ");
-            int width = Convert.ToInt32(Console.ReadLine());
+            // these hard-coded values will be replaced by whatever's in the mapset info file
+            double ratio = 1.5;
 
-            Console.Write("Height: ");
-            int height = Convert.ToInt32(Console.ReadLine());
+            int aspectX = 1800;
+            int aspectY = 1200;
+
+            int minXRes = 3600;
+            int minYRes = 2400;
+
+            int basePPI = 100;
+
+            int fillPixelsX = 0;
+            int fillPixelsY = 0;
 
             Console.Write("Scale amount: ");
             decimal scale = Convert.ToInt32(Console.ReadLine());
 
-            Console.Write("Selected Map Offset (X): ");
-            int mapX = Convert.ToInt32(Console.ReadLine());
+            Console.Write("Distance (X): ");
+            int distanceX = Convert.ToInt32(Console.ReadLine());
 
-            Console.Write("Selected Map Offset (Y): ");
-            int mapY = Convert.ToInt32(Console.ReadLine());
-            
+            Console.Write("Distance (Y): ");
+            int distanceY = Convert.ToInt32(Console.ReadLine());
+
+            // initialize enum variable to save how map is to be resized
+            MapInfo.ResizeType resizeType = MapInfo.ResizeType.None;
+
             MapInfo mapInfo = new MapInfo()
             {
                 MapName = fileName,
-                Width = width,
-                Height = height,
                 Scale = scale,
-                OffsetX = mapX,
-                OffsetY = mapY
+                DistanceX = distanceX,
+                DistanceY = distanceY
             };
 
             // makes object into string and adds it to suppied array
@@ -187,42 +200,168 @@ namespace MapImageTileTool
             using (FileStream pngStream = new FileStream(fileName + ".png", FileMode.Open, FileAccess.Read))
             using (var image = new Bitmap(pngStream))
             {
-
                 // testing resolution setting
-                int destWidth = width;
-                int destHeight = height;
+                int destWidth = image.Width;
+                int destHeight = image.Height;
 
-                // fit map by adding blank pixels, must be at least 3600 by 2400 px
-                // will need changes with custom aspect ratio, this is strict to 1800 by 1200 ratios
-                if (destWidth < 3600)
+                // gets the current resolution scale by the floored ratio of the current resolution (increased by one to increase PPI)
+                int currRes = (destWidth / destHeight) + 1;
+                double checkRatio = (double)destWidth /destHeight;
+
+                // gets the next available resolution that stays within the correct aspect ratio
+                if ((double)destWidth / destHeight != ratio || destWidth < minXRes || destHeight < minYRes)
                 {
-                    destWidth = 3600;
-                }
-                if (destHeight < 2400)
-                {
-                    destHeight = 2400;
-                }
-                while (destWidth % 1800 != 0 || destHeight % 1200 != 0 || destWidth <= destHeight)
-                {
-                    if ((destWidth % 1800) != 0)
+
+                    // fit map by adding blank pixels, must be at least 3600 by 2400 px
+                    if (destWidth < minXRes)
                     {
-
+                        destWidth = 3600;
                     }
+                    if (destHeight < minYRes)
+                    {
+                        destHeight = 2400;
+                    }
+
+                    while ((destWidth / destHeight) != ratio)
+                    {
+                        currRes++;
+                        destWidth = currRes * aspectX;
+                        destHeight = currRes * aspectY;
+                    }
+
+                    fillPixelsX = destWidth - image.Width;
+                    fillPixelsY = destHeight - image.Height;
+
+                    Console.WriteLine("\nImage of " + image.Width + "x" + image.Height + " will be resized to " + destWidth + "x" + destHeight + ".");
+                    Console.WriteLine("Scale original image or fill with blank space?");
+                    Console.Write("1: Fill\n2: Resize\n3: Cancel\n:");
+                    string gfxSelection = Console.ReadLine();
+
+                    switch (gfxSelection)
+                    {
+                        case "1":
+                            Console.Write("\nMap will be adjusted for aspect ratio and will contain blank space.\nWhere should the new pixels to be rendered?\n");
+                            if (fillPixelsX > 0 && fillPixelsY > 0)
+                            {
+                                Console.Write("1: Top Left\n2: Bottom Left\n3: Top Right\n4: Bottom Right\nOther Input: Cancel\n:");
+                                switch (Console.ReadLine())
+                                {
+                                    case "1":
+                                        resizeType = MapInfo.ResizeType.FillTopLeft;
+                                        break;
+                                    case "2":
+                                        resizeType = MapInfo.ResizeType.FillBottomLeft;
+                                        break;
+                                    case "3":
+                                        resizeType = MapInfo.ResizeType.FillTopRight;
+                                        break;
+                                    case "4":
+                                        resizeType = MapInfo.ResizeType.FillBottomRight;
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            }
+                            else if (fillPixelsX > 0)
+                            {
+                                Console.Write("1: Left\n2: Right\n:");
+                                switch (Console.ReadLine())
+                                {
+                                    case "1":
+                                        resizeType = MapInfo.ResizeType.FillLeft;
+                                        break;
+                                    case "2":
+                                        resizeType = MapInfo.ResizeType.FillRight;
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            }
+                            else if (fillPixelsY > 0)
+                            {
+                                Console.Write("1: Top\n2: Bottom\n:");
+                                switch (Console.ReadLine())
+                                {
+                                    case "1":
+                                        resizeType = MapInfo.ResizeType.FillTop;
+                                        break;
+                                    case "2":
+                                        resizeType = MapInfo.ResizeType.FillBottom;
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            }
+                            break;
+
+                        case "2":
+                            resizeType = MapInfo.ResizeType.Stretch;
+                            Console.WriteLine("Scaling image to " + destWidth + "x" + destHeight + ".");
+                            break;
+
+                        default:
+                            break;
+                    }
+                    
                 }
 
+                Bitmap resizedImg = new Bitmap(destWidth, destHeight);
+                Graphics gfx = Graphics.FromImage(resizedImg);
+
+                switch (resizeType)
+                {
+                    case MapInfo.ResizeType.FillLeft:
+                        gfx.DrawImage(image, fillPixelsX, 0, resizedImg.Width, resizedImg.Height);
+                        break;
+                    case MapInfo.ResizeType.FillRight:
+                        gfx.DrawImage(image, 0, 0, image.Width, image.Height);
+                        break;
+                    case MapInfo.ResizeType.FillTop:
+                        gfx.DrawImage(image, 0, fillPixelsY, image.Width, image.Height);
+                        break;
+                    case MapInfo.ResizeType.FillBottom:
+                        gfx.DrawImage(image, 0, 0, image.Width, image.Height);
+                        break;
+                    case MapInfo.ResizeType.FillTopLeft:
+                        gfx.DrawImage(image, fillPixelsX, fillPixelsY, image.Width, image.Height);
+                        break;
+                    case MapInfo.ResizeType.FillTopRight:
+                        gfx.DrawImage(image, 0, fillPixelsY, image.Width, image.Height);
+                        break;
+                    case MapInfo.ResizeType.FillBottomLeft:
+                        gfx.DrawImage(image, fillPixelsX, 0, image.Width, image.Height);
+                        break;
+                    case MapInfo.ResizeType.FillBottomRight:
+                        gfx.DrawImage(image, 0, 0, image.Width, image.Height);
+                        break;
+                    default:
+                        Console.WriteLine("Invalid resize type.");
+                        break;
+                }
+
+                
                 Directory.SetCurrentDirectory(fileName + " Maps");
                 PixelFormat format = image.PixelFormat;
-                for (int i = 0; i < width; i++)
+
+                // make map tiles: mapSize / (distanceSquares / mapSquares)
+                // base square PPI = 100, mapSquares = aspectX / basePPI
+                int xSize = (distanceX / (aspectX / basePPI));
+                int ySize = (distanceY / (aspectY / basePPI));
+
+                int mapAmountX = (destWidth / xSize) + 1;
+                int mapAmountY = (destHeight / ySize) + 1;
+                for (int i = 0; i < mapAmountX; i++)
                 {
-                    for (int j = 0; j < height; j++)
+                    for (int j = 0; j < mapAmountY; j++)
                     {
-                        Rectangle cropArea = new Rectangle(i * (image.Width / width), j * (image.Height / height), (image.Width / width), (image.Height / height));
-                        Bitmap bitmap = image.Clone(cropArea, format);
+                        Rectangle cropArea = new Rectangle(i * (destWidth / xSize), j * (destHeight / ySize), xSize, ySize);
+                        Bitmap bitmap = resizedImg.Clone(cropArea, format);
                         bitmap.Save(fileName + "_" + i + "_" + j + ".png");
                     }
                 }
             }
-
+        }
+        /*
             using (StreamWriter file = new StreamWriter(mapInfoPath))
             using (JsonTextWriter writer = new JsonTextWriter(file))
             {
@@ -230,6 +369,6 @@ namespace MapImageTileTool
                 // needs to not have formatting characters and perserve original file layout
                 Console.WriteLine(mapArray.ToString());
             }
+            */
         }
     }
-}
