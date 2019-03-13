@@ -23,11 +23,13 @@ namespace MapImageTileTool
     }
     class Program
     {
+        static Graphics gfx;
         static void Main(string[] args)
         {
 
             StringBuilder sb = new StringBuilder();
             StringWriter sw = new StringWriter(sb);
+            
             JObject mapsInfo;
             JArray mapArray;
             string mapInfoPath;
@@ -70,8 +72,6 @@ namespace MapImageTileTool
                 mapsInfo = (JObject)JToken.ReadFrom(new JsonTextReader(reader));
                 mapArray = (JArray)mapsInfo["Maps"];
             }
-
-            
 
             int menuSelection = 0;
 
@@ -169,10 +169,16 @@ namespace MapImageTileTool
             int scale = Convert.ToInt32(Console.ReadLine());
 
             Console.Write("Distance (X): ");
-            int distanceX = Convert.ToInt32(Console.ReadLine()) / scale;
 
-            Console.Write("Distance (Y): ");
-            int distanceY = Convert.ToInt32(Console.ReadLine()) / scale;
+            // get map distance in squares and get measurements to resize and tile the picture
+            int distanceX = Convert.ToInt32(Console.ReadLine());
+            int distanceY = (int)Math.Ceiling(distanceX / ratio);
+            int mapAmtX = (int)Math.Ceiling((double)distanceX / (aspectX * scale / basePPI));
+            int mapAmtY = (int)Math.Ceiling((double)distanceY / (aspectY * scale / basePPI));
+            int mapSizeX = distanceX / mapAmtX;
+            int mapSizeY = distanceY / mapAmtY;
+            int newResX = mapAmtX * (aspectX / basePPI) * scale;
+            int newResY = mapAmtY * (aspectY / basePPI) * scale;
 
             // initialize enum variable to save how map is to be resized
             MapInfo.ResizeType resizeType = MapInfo.ResizeType.None;
@@ -203,26 +209,29 @@ namespace MapImageTileTool
             using (FileStream pngStream = new FileStream(fileName + ".png", FileMode.Open, FileAccess.Read))
             using (var image = new Bitmap(pngStream))
             {
-                // testing resolution setting
-                int destWidth = image.Width;
-                int destHeight = image.Height;
+                // scales image to hold correct number of maps within aspect ratio
+                
+                Bitmap firstResize = new Bitmap(image, new Size(newResX, newResY));
+
+                // initializes variables to set desired width and height by adding blank space
+                int destWidth = firstResize.Width;
+                int destHeight = firstResize.Height;
 
                 // gets the current resolution scale by the floored ratio of the current resolution (increased by one to increase PPI)
                 int currRes = (destWidth / destHeight) + 1;
 
-                // fit map by adding blank pixels, must be at least 3600 by 2400 px
-                if (destWidth < minXRes)
-                {
-                    destWidth = 3600;
-                }
-                if (destHeight < minYRes)
-                {
-                    destHeight = 2400;
-                }
-
                 // gets the next available resolution that stays within the correct aspect ratio
                 if ((double)destWidth / destHeight != ratio || destWidth < minXRes || destHeight < minYRes)
                 {
+                    // fit map by adding blank pixels, must be at least 3600 by 2400 px
+                    if (destWidth < minXRes)
+                    {
+                        destWidth = 3600;
+                    }
+                    if (destHeight < minYRes)
+                    {
+                        destHeight = 2400;
+                    }
                     while ((double)destWidth / destHeight != ratio)
                     {
                         currRes++;
@@ -306,43 +315,37 @@ namespace MapImageTileTool
                     
                 }
 
-                int xSize = (distanceX / (aspectX / basePPI)) + 1;
-                int ySize = (distanceY / (aspectY / basePPI)) + 1;
-
-                int mapAmountX = (destWidth / xSize);
-                int mapAmountY = (destHeight / ySize);
-
                 Bitmap resizedImg = new Bitmap(destWidth, destHeight);
-                Graphics gfx = Graphics.FromImage(resizedImg);
+                gfx = Graphics.FromImage(resizedImg);
 
                 switch (resizeType)
                 {
                     case MapInfo.ResizeType.FillLeft:
-                        gfx.DrawImage(image, fillPixelsX, 0, resizedImg.Width, resizedImg.Height);
+                        gfx.DrawImage(firstResize, fillPixelsX, 0, resizedImg.Width, resizedImg.Height);
                         break;
                     case MapInfo.ResizeType.FillRight:
-                        gfx.DrawImage(image, 0, 0, image.Width, image.Height);
+                        gfx.DrawImage(firstResize, 0, 0, firstResize.Width, firstResize.Height);
                         break;
                     case MapInfo.ResizeType.FillTop:
-                        gfx.DrawImage(image, 0, fillPixelsY, image.Width, image.Height);
+                        gfx.DrawImage(firstResize, 0, fillPixelsY, firstResize.Width, firstResize.Height);
                         break;
                     case MapInfo.ResizeType.FillBottom:
-                        gfx.DrawImage(image, 0, 0, image.Width, image.Height);
+                        gfx.DrawImage(firstResize, 0, 0, firstResize.Width, firstResize.Height);
                         break;
                     case MapInfo.ResizeType.FillTopLeft:
-                        gfx.DrawImage(image, fillPixelsX, fillPixelsY, image.Width, image.Height);
+                        gfx.DrawImage(firstResize, fillPixelsX, fillPixelsY, firstResize.Width, firstResize.Height);
                         break;
                     case MapInfo.ResizeType.FillTopRight:
-                        gfx.DrawImage(image, 0, fillPixelsY, image.Width, image.Height);
+                        gfx.DrawImage(firstResize, 0, fillPixelsY, firstResize.Width, firstResize.Height);
                         break;
                     case MapInfo.ResizeType.FillBottomLeft:
-                        gfx.DrawImage(image, fillPixelsX, 0, image.Width, image.Height);
+                        gfx.DrawImage(firstResize, fillPixelsX, 0, firstResize.Width, firstResize.Height);
                         break;
                     case MapInfo.ResizeType.FillBottomRight:
-                        gfx.DrawImage(image, 0, 0, image.Width, image.Height);
+                        gfx.DrawImage(firstResize, 0, 0, firstResize.Width, firstResize.Height);
                         break;
                     case MapInfo.ResizeType.None:
-                        gfx.DrawImage(image, 0, 0, image.Width, image.Height);
+                        gfx.DrawImage(firstResize, 0, 0, firstResize.Width, firstResize.Height);
                         break;
                     default:
                         Console.WriteLine("Invalid resize type.");
@@ -355,15 +358,15 @@ namespace MapImageTileTool
 
                 // make map tiles: mapSize / (distanceSquares / mapSquares)
                 // base square PPI = 100, mapSquares = aspectX / basePPI
-                // change these names
+                
 
-                for (int i = 0; i < xSize; i++)
+                for (int i = 0; i < mapAmtX; i++)
                 {
-                    for (int j = 0; j < ySize; j++)
+                    for (int j = 0; j < mapAmtY; j++)
                     {
-                        Rectangle cropArea = new Rectangle(i * (destWidth / mapAmountX), j * (destHeight / mapAmountY), mapAmountX, mapAmountY);
-                        Bitmap bitmap = resizedImg.Clone(cropArea, format);
-                        bitmap.Save(fileName + "_" + i + "_" + j + ".png");
+                        Rectangle cropArea = new Rectangle(i * mapSizeX, j * mapSizeY, mapSizeX, mapSizeY);
+                        Bitmap newImg = new Bitmap(resizedImg.Clone(cropArea, format), new Size(minXRes, minYRes));
+                        newImg.Save(fileName + "_" + i + "_" + j + ".png");
                     }
                 }
             }

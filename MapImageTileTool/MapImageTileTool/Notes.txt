@@ -24,6 +24,18 @@ fill: 7th map would have blank space put in %33 of map if no adjancent map
 mapTileSizePxls = mapSizePxls / (distanceSquares / mapSquares)
 
 
+distanceX = 4000
+distanceY = 2667
+scale = 20
+sqaures: 4000 / 20 = 200, ceiling(2667 / 20) = 134
+amount of maps Y: ceiling(134 / 12) = 12
+newRes = mapAmt * aspect * scale 
+
+original map must be resized and scaled before resolution scale is found
+resized to: destWidth + (destWidth % (destWidth / mapAmountX))
+
+
+
 Adding Maps:
 
 save all map information in text file:
