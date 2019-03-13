@@ -209,10 +209,12 @@ namespace MapImageTileTool
                 
                 int mapAmtX = (int)Math.Ceiling((double)distanceX / (aspectX * scale / basePPI));
                 int mapAmtY = (int)Math.Ceiling((double)distanceY / (aspectY * scale / basePPI));
-                int mapSizeX = (int)Math.Ceiling((double)image.Width / mapAmtX);
-                int mapSizeY = (int)Math.Ceiling((double)image.Height / mapAmtY);
-                int newResX = mapAmtX * mapSizeX;
-                int newResY = mapAmtY * mapSizeY;
+                int mapSizeX = (int)Math.Ceiling((double)distanceX / scale);
+                int mapSizeY = (int)Math.Ceiling((double)distanceY / scale);
+
+                // minimum resolution must be found for grid to fully display, and then add fill pixels to resize map to aspect ratio
+                int newResX = mapSizeX * basePPI;
+                int newResY = mapSizeY * basePPI;
 
                 // scales image to hold correct number of maps within aspect ratio
                 Bitmap firstResize = new Bitmap(image, new Size(newResX, newResY));
@@ -368,9 +370,9 @@ namespace MapImageTileTool
                 {
                     for (int j = 0; j < mapAmtY; j++)
                     {
-                        Rectangle cropArea = new Rectangle(i * mapSizeX, j * mapSizeY, mapSizeX, mapSizeY);
-                        Bitmap newImg = new Bitmap(resizedImg.Clone(cropArea, format), new Size(minXRes, minYRes));
-                        newImg.Save(fileName + "_" + i + "_" + j + ".png");
+                        Rectangle cropArea = new Rectangle(i * (resizedImg.Width / mapAmtX), j * (resizedImg.Height / mapAmtY), (resizedImg.Width / mapAmtX), (resizedImg.Height / mapAmtY));
+                        // Bitmap newImg = new Bitmap(resizedImg.Clone(cropArea, format), new Size(minXRes, minYRes));
+                        resizedImg.Clone(cropArea, format).Save(fileName + "_" + i + "_" + j + ".png");
                     }
                 }
             }

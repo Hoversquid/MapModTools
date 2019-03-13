@@ -37,6 +37,7 @@ resized to: destWidth + (destWidth % (destWidth / mapAmountX))
 78sq scale 2
 78 / 2 = 39sq scaled up
 39 / 3 = 13sq per map
+2925 = 13 * 3
 2925 / 3 = pixel per map: 975
 
 
