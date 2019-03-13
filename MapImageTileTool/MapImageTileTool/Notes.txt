@@ -34,6 +34,16 @@ newRes = mapAmt * aspect * scale
 original map must be resized and scaled before resolution scale is found
 resized to: destWidth + (destWidth % (destWidth / mapAmountX))
 
+78sq scale 2
+78 / 2 = 39sq scaled up
+39 / 3 = 13sq per map
+2925 / 3 = pixel per map: 975
+
+
+18 * 3 = renderSq
+1800 * 3 = renderPxl
+
+
 
 
 Adding Maps:

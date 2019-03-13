@@ -172,13 +172,9 @@ namespace MapImageTileTool
 
             // get map distance in squares and get measurements to resize and tile the picture
             int distanceX = Convert.ToInt32(Console.ReadLine());
+
             int distanceY = (int)Math.Ceiling(distanceX / ratio);
-            int mapAmtX = (int)Math.Ceiling((double)distanceX / (aspectX * scale / basePPI));
-            int mapAmtY = (int)Math.Ceiling((double)distanceY / (aspectY * scale / basePPI));
-            int mapSizeX = distanceX / mapAmtX;
-            int mapSizeY = distanceY / mapAmtY;
-            int newResX = mapAmtX * (aspectX / basePPI) * scale;
-            int newResY = mapAmtY * (aspectY / basePPI) * scale;
+
 
             // initialize enum variable to save how map is to be resized
             MapInfo.ResizeType resizeType = MapInfo.ResizeType.None;
@@ -209,8 +205,16 @@ namespace MapImageTileTool
             using (FileStream pngStream = new FileStream(fileName + ".png", FileMode.Open, FileAccess.Read))
             using (var image = new Bitmap(pngStream))
             {
-                // scales image to hold correct number of maps within aspect ratio
+
                 
+                int mapAmtX = (int)Math.Ceiling((double)distanceX / (aspectX * scale / basePPI));
+                int mapAmtY = (int)Math.Ceiling((double)distanceY / (aspectY * scale / basePPI));
+                int mapSizeX = (int)Math.Ceiling((double)image.Width / mapAmtX);
+                int mapSizeY = (int)Math.Ceiling((double)image.Height / mapAmtY);
+                int newResX = mapAmtX * mapSizeX;
+                int newResY = mapAmtY * mapSizeY;
+
+                // scales image to hold correct number of maps within aspect ratio
                 Bitmap firstResize = new Bitmap(image, new Size(newResX, newResY));
 
                 // initializes variables to set desired width and height by adding blank space
