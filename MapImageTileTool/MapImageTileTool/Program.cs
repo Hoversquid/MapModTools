@@ -13,7 +13,7 @@ namespace MapImageTileTool
     {
         public enum ResizeType { None, Stretch, FillTopLeft, FillBottomLeft, FillTopRight, FillBottomRight, FillTop, FillBottom, FillLeft, FillRight };
         public string MapName { get; set; }
-        public decimal Scale { get; set; }
+        public int Scale { get; set; }
         public int Width { get; set; }
         public int Height { get; set; }
         public int OffsetX { get; set; }
@@ -31,6 +31,7 @@ namespace MapImageTileTool
             JObject mapsInfo;
             JArray mapArray;
             string mapInfoPath;
+            string depoPath;
 
             // select map depo
             Console.Write("Name of Map Folder: ");
@@ -60,6 +61,7 @@ namespace MapImageTileTool
             }
 
             // sets path to be used later as maps are added 
+            depoPath = Directory.GetCurrentDirectory();
             mapInfoPath = Path.GetFullPath(@"MapInfo.JSON");
 
             // gets array for map info appending
@@ -75,6 +77,7 @@ namespace MapImageTileTool
 
             while (menuSelection != 3)
             {
+                Directory.SetCurrentDirectory(depoPath);
                 Console.WriteLine(" \n - Select map folder option - \n");
                 Console.WriteLine("1: Add Map");
                 Console.WriteLine("2: Generate JSON String");
@@ -163,13 +166,13 @@ namespace MapImageTileTool
             int fillPixelsY = 0;
 
             Console.Write("Scale amount: ");
-            decimal scale = Convert.ToInt32(Console.ReadLine());
+            int scale = Convert.ToInt32(Console.ReadLine());
 
             Console.Write("Distance (X): ");
-            int distanceX = Convert.ToInt32(Console.ReadLine());
+            int distanceX = Convert.ToInt32(Console.ReadLine()) / scale;
 
             Console.Write("Distance (Y): ");
-            int distanceY = Convert.ToInt32(Console.ReadLine());
+            int distanceY = Convert.ToInt32(Console.ReadLine()) / scale;
 
             // initialize enum variable to save how map is to be resized
             MapInfo.ResizeType resizeType = MapInfo.ResizeType.None;
@@ -206,23 +209,21 @@ namespace MapImageTileTool
 
                 // gets the current resolution scale by the floored ratio of the current resolution (increased by one to increase PPI)
                 int currRes = (destWidth / destHeight) + 1;
-                double checkRatio = (double)destWidth /destHeight;
+
+                // fit map by adding blank pixels, must be at least 3600 by 2400 px
+                if (destWidth < minXRes)
+                {
+                    destWidth = 3600;
+                }
+                if (destHeight < minYRes)
+                {
+                    destHeight = 2400;
+                }
 
                 // gets the next available resolution that stays within the correct aspect ratio
                 if ((double)destWidth / destHeight != ratio || destWidth < minXRes || destHeight < minYRes)
                 {
-
-                    // fit map by adding blank pixels, must be at least 3600 by 2400 px
-                    if (destWidth < minXRes)
-                    {
-                        destWidth = 3600;
-                    }
-                    if (destHeight < minYRes)
-                    {
-                        destHeight = 2400;
-                    }
-
-                    while ((destWidth / destHeight) != ratio)
+                    while ((double)destWidth / destHeight != ratio)
                     {
                         currRes++;
                         destWidth = currRes * aspectX;
@@ -305,6 +306,12 @@ namespace MapImageTileTool
                     
                 }
 
+                int xSize = (distanceX / (aspectX / basePPI)) + 1;
+                int ySize = (distanceY / (aspectY / basePPI)) + 1;
+
+                int mapAmountX = (destWidth / xSize);
+                int mapAmountY = (destHeight / ySize);
+
                 Bitmap resizedImg = new Bitmap(destWidth, destHeight);
                 Graphics gfx = Graphics.FromImage(resizedImg);
 
@@ -334,6 +341,9 @@ namespace MapImageTileTool
                     case MapInfo.ResizeType.FillBottomRight:
                         gfx.DrawImage(image, 0, 0, image.Width, image.Height);
                         break;
+                    case MapInfo.ResizeType.None:
+                        gfx.DrawImage(image, 0, 0, image.Width, image.Height);
+                        break;
                     default:
                         Console.WriteLine("Invalid resize type.");
                         break;
@@ -345,16 +355,13 @@ namespace MapImageTileTool
 
                 // make map tiles: mapSize / (distanceSquares / mapSquares)
                 // base square PPI = 100, mapSquares = aspectX / basePPI
-                int xSize = (distanceX / (aspectX / basePPI));
-                int ySize = (distanceY / (aspectY / basePPI));
+                // change these names
 
-                int mapAmountX = (destWidth / xSize) + 1;
-                int mapAmountY = (destHeight / ySize) + 1;
-                for (int i = 0; i < mapAmountX; i++)
+                for (int i = 0; i < xSize; i++)
                 {
-                    for (int j = 0; j < mapAmountY; j++)
+                    for (int j = 0; j < ySize; j++)
                     {
-                        Rectangle cropArea = new Rectangle(i * (destWidth / xSize), j * (destHeight / ySize), xSize, ySize);
+                        Rectangle cropArea = new Rectangle(i * (destWidth / mapAmountX), j * (destHeight / mapAmountY), mapAmountX, mapAmountY);
                         Bitmap bitmap = resizedImg.Clone(cropArea, format);
                         bitmap.Save(fileName + "_" + i + "_" + j + ".png");
                     }
