@@ -168,12 +168,13 @@ namespace MapImageTileTool
             Console.Write("Scale amount: ");
             int scale = Convert.ToInt32(Console.ReadLine());
 
-            Console.Write("Distance (X): ");
 
             // get map distance in squares and get measurements to resize and tile the picture
+            Console.Write("Distance (X): ");
             int distanceX = Convert.ToInt32(Console.ReadLine());
 
-            int distanceY = (int)Math.Ceiling(distanceX / ratio);
+            Console.Write("Distance (Y): ");
+            int distanceY = Convert.ToInt32(Console.ReadLine());
 
 
             // initialize enum variable to save how map is to be resized
@@ -209,12 +210,13 @@ namespace MapImageTileTool
                 
                 int mapAmtX = (int)Math.Ceiling((double)distanceX / (aspectX * scale / basePPI));
                 int mapAmtY = (int)Math.Ceiling((double)distanceY / (aspectY * scale / basePPI));
-                int mapSizeX = (int)Math.Ceiling((double)distanceX / scale);
-                int mapSizeY = (int)Math.Ceiling((double)distanceY / scale);
 
                 // minimum resolution must be found for grid to fully display, and then add fill pixels to resize map to aspect ratio
-                int newResX = mapSizeX * basePPI;
-                int newResY = mapSizeY * basePPI;
+                int newResX = basePPI * (distanceX / scale);
+                int newResY = basePPI * (distanceY / scale);
+
+                int mapPxX = newResX / mapAmtX;
+                int mapPxY = newResY / mapAmtY;
 
                 // scales image to hold correct number of maps within aspect ratio
                 Bitmap firstResize = new Bitmap(image, new Size(newResX, newResY));
@@ -248,7 +250,7 @@ namespace MapImageTileTool
                     fillPixelsX = destWidth - image.Width;
                     fillPixelsY = destHeight - image.Height;
 
-                    Console.WriteLine("\nImage of " + image.Width + "x" + image.Height + " will be resized to " + destWidth + "x" + destHeight + ".");
+                    Console.WriteLine("\nImage of " + firstResize.Width + "x" + firstResize.Height + " will be resized to " + destWidth + "x" + destHeight + ".");
                     Console.WriteLine("Scale original image or fill with blank space?");
                     Console.Write("1: Fill\n2: Resize\n3: Cancel\n:");
                     string gfxSelection = Console.ReadLine();

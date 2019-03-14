@@ -16,36 +16,14 @@ aspect ratio will be able to be changed when program moves away from being depen
 number of scaled maps on display:
 maps that are tiled must be in correct ratio or have blank space added to end
 
-mapXBaseSize: (gridsize x ppi x (renderDistance / baseDistance))
-mapTileXSize: mapSquares x ppi / (tileScale / mapScale)
-3600px map, scale 4, distance 600ft (120sq at scale 1)
-120sq / 18sq map = 6.66 maps 
-fill: 7th map would have blank space put in %33 of map if no adjancent map
-mapTileSizePxls = mapSizePxls / (distanceSquares / mapSquares)
+39 x 30 map, scale 2, 2925 x 2251
+3 by 3 maps
+13 x 10 sqaures per map
 
-
-distanceX = 4000
-distanceY = 2667
-scale = 20
-sqaures: 4000 / 20 = 200, ceiling(2667 / 20) = 134
-amount of maps Y: ceiling(134 / 12) = 12
-newRes = mapAmt * aspect * scale 
-
-original map must be resized and scaled before resolution scale is found
-resized to: destWidth + (destWidth % (destWidth / mapAmountX))
-
-78sq scale 2
-78 / 2 = 39sq scaled up
-39 / 3 = 13sq per map
-2925 = 13 * 3
-2925 / 3 = pixel per map: 975
-
-
-18 * 3 = renderSq
-1800 * 3 = renderPxl
-
-
-
+1800 / 18 = 100 pixels^2 per square
+2925 / 39 = 75 pixels^2 per square
+destWidth / (distX / scale) = 100pxl^2
+baseDPI x (distX / scale) = destWidth
 
 Adding Maps:
 
