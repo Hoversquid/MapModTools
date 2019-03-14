@@ -152,15 +152,13 @@ namespace MapImageTileTool
         static void WriteMapTiles(string fileName, string mapInfoPath, JArray mapArray)
         {
             // these hard-coded values will be replaced by whatever's in the mapset info file
-            double ratio = 1.5;
-
-            int aspectX = 1800;
-            int aspectY = 1200;
+            int displaySqX = 18;
+            int displaySqY = 12;
 
             int minXRes = 3600;
             int minYRes = 2400;
 
-            int basePPI = 100;
+            int pxlDensity = 100;
 
             int fillPixelsX = 0;
             int fillPixelsY = 0;
@@ -171,10 +169,10 @@ namespace MapImageTileTool
 
             // get map distance in squares and get measurements to resize and tile the picture
             Console.Write("Distance (X): ");
-            int distanceX = Convert.ToInt32(Console.ReadLine());
+            int distanceX = Convert.ToInt32(Console.ReadLine()) / scale;
 
             Console.Write("Distance (Y): ");
-            int distanceY = Convert.ToInt32(Console.ReadLine());
+            int distanceY = Convert.ToInt32(Console.ReadLine()) / scale;
 
 
             // initialize enum variable to save how map is to be resized
@@ -206,17 +204,12 @@ namespace MapImageTileTool
             using (FileStream pngStream = new FileStream(fileName + ".png", FileMode.Open, FileAccess.Read))
             using (var image = new Bitmap(pngStream))
             {
-
-                
-                int mapAmtX = (int)Math.Ceiling((double)distanceX / (aspectX * scale / basePPI));
-                int mapAmtY = (int)Math.Ceiling((double)distanceY / (aspectY * scale / basePPI));
+                int mapAmtX = (int)Math.Ceiling((double)distanceX / displaySqX);
+                int mapAmtY = (int)Math.Ceiling((double)distanceY / displaySqY);
 
                 // minimum resolution must be found for grid to fully display, and then add fill pixels to resize map to aspect ratio
-                int newResX = basePPI * (distanceX / scale);
-                int newResY = basePPI * (distanceY / scale);
-
-                int mapPxX = newResX / mapAmtX;
-                int mapPxY = newResY / mapAmtY;
+                int newResX = pxlDensity * distanceX;
+                int newResY = pxlDensity * distanceY;
 
                 // scales image to hold correct number of maps within aspect ratio
                 Bitmap firstResize = new Bitmap(image, new Size(newResX, newResY));
@@ -227,9 +220,9 @@ namespace MapImageTileTool
 
                 // gets the current resolution scale by the floored ratio of the current resolution (increased by one to increase PPI)
                 int currRes = (destWidth / destHeight) + 1;
-
+                double aspectRatio = (double)displaySqX / displaySqY;
                 // gets the next available resolution that stays within the correct aspect ratio
-                if ((double)destWidth / destHeight != ratio || destWidth < minXRes || destHeight < minYRes)
+                if ((double)destWidth / destHeight != aspectRatio || destWidth < minXRes || destHeight < minYRes)
                 {
                     // fit map by adding blank pixels, must be at least 3600 by 2400 px
                     if (destWidth < minXRes)
@@ -240,11 +233,11 @@ namespace MapImageTileTool
                     {
                         destHeight = 2400;
                     }
-                    while ((double)destWidth / destHeight != ratio)
+                    while ((double)destWidth / destHeight != aspectRatio)
                     {
                         currRes++;
-                        destWidth = currRes * aspectX;
-                        destHeight = currRes * aspectY;
+                        destWidth = currRes * displaySqX * pxlDensity;
+                        destHeight = currRes * displaySqY * pxlDensity;
                     }
 
                     fillPixelsX = destWidth - image.Width;
@@ -359,15 +352,9 @@ namespace MapImageTileTool
                         Console.WriteLine("Invalid resize type.");
                         break;
                 }
-
                 
                 Directory.SetCurrentDirectory(fileName + " Maps");
                 PixelFormat format = image.PixelFormat;
-
-                // make map tiles: mapSize / (distanceSquares / mapSquares)
-                // base square PPI = 100, mapSquares = aspectX / basePPI
-                
-
                 for (int i = 0; i < mapAmtX; i++)
                 {
                     for (int j = 0; j < mapAmtY; j++)
