@@ -9,9 +9,19 @@ using Newtonsoft.Json.Linq;
 
 namespace MapImageTileTool
 {
-    class MapInfo
+    public interface IMaps
     {
-        public enum ResizeType { None, Stretch, FillTopLeft, FillBottomLeft, FillTopRight, FillBottomRight, FillTop, FillBottom, FillLeft, FillRight };
+        string MapName { get; set; }
+        int Scale { get; set; }
+        int Width { get; set; }
+        int Height { get; set; }
+        int OffsetX { get; set; }
+        int OffsetY { get; set; }
+        int DistanceX { get; set; }
+        int DistanceY { get; set; }
+    }
+    class MapInfo : IMaps
+    {
         public string MapName { get; set; }
         public int Scale { get; set; }
         public int Width { get; set; }
@@ -20,6 +30,11 @@ namespace MapImageTileTool
         public int OffsetY { get; set; }
         public int DistanceX { get; set; }
         public int DistanceY { get; set; }
+        public Point RenderPoint { get; set; }
+        public void SetFill(int X, int Y)
+        {
+            RenderPoint = new Point(X, Y);
+        }
     }
     class Program
     {
@@ -175,17 +190,13 @@ namespace MapImageTileTool
 
             Console.Write("Distance (Y): ");
             int distanceY = Convert.ToInt32(Console.ReadLine());
-
-
-            // initialize enum variable to save how map is to be resized
-            MapInfo.ResizeType resizeType = MapInfo.ResizeType.None;
-
             MapInfo mapInfo = new MapInfo()
             {
                 MapName = fileName,
                 Scale = scale,
                 DistanceX = distanceX,
-                DistanceY = distanceY
+                DistanceY = distanceY,
+
             };
 
             // makes object into string and adds it to suppied array
@@ -206,8 +217,6 @@ namespace MapImageTileTool
             using (FileStream pngStream = new FileStream(fileName + ".png", FileMode.Open, FileAccess.Read))
             using (var image = new Bitmap(pngStream))
             {
-
-                
                 int mapAmtX = (int)Math.Ceiling((double)distanceX / (aspectX * scale / basePPI));
                 int mapAmtY = (int)Math.Ceiling((double)distanceY / (aspectY * scale / basePPI));
 
@@ -258,23 +267,26 @@ namespace MapImageTileTool
                     switch (gfxSelection)
                     {
                         case "1":
-                            Console.Write("\nMap will be adjusted for aspect ratio and will contain blank space.\nWhere should the new pixels to be rendered?\n");
+                            Console.Write("\nSelect location on map to render blank space");
                             if (fillPixelsX > 0 && fillPixelsY > 0)
                             {
-                                Console.Write("1: Top Left\n2: Bottom Left\n3: Top Right\n4: Bottom Right\nOther Input: Cancel\n:");
+                                Console.WriteLine("\n{0, -12} {0, 12}", "1: Top Left", "2: Top Right");
+                                Console.WriteLine("\n{0, -12} {0, 12}", "3: Top Right", "4: Bottom Right");
+                                Console.Write("Other Input: Cancel\n\n Select: ");
+
                                 switch (Console.ReadLine())
                                 {
                                     case "1":
-                                        resizeType = MapInfo.ResizeType.FillTopLeft;
+                                        mapInfo.SetFill(fillPixelsX, fillPixelsY);
                                         break;
                                     case "2":
-                                        resizeType = MapInfo.ResizeType.FillBottomLeft;
+                                        mapInfo.SetFill(0, fillPixelsY);
                                         break;
                                     case "3":
-                                        resizeType = MapInfo.ResizeType.FillTopRight;
+                                        mapInfo.SetFill(0, fillPixelsY);
                                         break;
                                     case "4":
-                                        resizeType = MapInfo.ResizeType.FillBottomRight;
+                                        mapInfo.SetFill(0, 0);
                                         break;
                                     default:
                                         break;
@@ -282,14 +294,14 @@ namespace MapImageTileTool
                             }
                             else if (fillPixelsX > 0)
                             {
-                                Console.Write("1: Left\n2: Right\n:");
+                                Console.Write("{0, -12} {0, 12}","1: Left", "2: Right\n\n Select: ");
                                 switch (Console.ReadLine())
                                 {
                                     case "1":
-                                        resizeType = MapInfo.ResizeType.FillLeft;
+                                        mapInfo.SetFill(fillPixelsX, 0);
                                         break;
                                     case "2":
-                                        resizeType = MapInfo.ResizeType.FillRight;
+                                        mapInfo.SetFill(0, 0);
                                         break;
                                     default:
                                         break;
@@ -297,14 +309,14 @@ namespace MapImageTileTool
                             }
                             else if (fillPixelsY > 0)
                             {
-                                Console.Write("1: Top\n2: Bottom\n:");
+                                Console.Write("1: Top\n2: Bottom\n\nSelect: ");
                                 switch (Console.ReadLine())
                                 {
                                     case "1":
-                                        resizeType = MapInfo.ResizeType.FillTop;
+                                        mapInfo.SetFill(0, fillPixelsY);
                                         break;
                                     case "2":
-                                        resizeType = MapInfo.ResizeType.FillBottom;
+                                        mapInfo.SetFill(0, 0);
                                         break;
                                     default:
                                         break;
@@ -313,8 +325,6 @@ namespace MapImageTileTool
                             break;
 
                         case "2":
-                            resizeType = MapInfo.ResizeType.Stretch;
-                            Console.WriteLine("Scaling image to " + destWidth + "x" + destHeight + ".");
                             break;
 
                         default:
@@ -325,55 +335,18 @@ namespace MapImageTileTool
 
                 Bitmap resizedImg = new Bitmap(destWidth, destHeight);
                 gfx = Graphics.FromImage(resizedImg);
-
-                switch (resizeType)
-                {
-                    case MapInfo.ResizeType.FillLeft:
-                        gfx.DrawImage(firstResize, fillPixelsX, 0, resizedImg.Width, resizedImg.Height);
-                        break;
-                    case MapInfo.ResizeType.FillRight:
-                        gfx.DrawImage(firstResize, 0, 0, firstResize.Width, firstResize.Height);
-                        break;
-                    case MapInfo.ResizeType.FillTop:
-                        gfx.DrawImage(firstResize, 0, fillPixelsY, firstResize.Width, firstResize.Height);
-                        break;
-                    case MapInfo.ResizeType.FillBottom:
-                        gfx.DrawImage(firstResize, 0, 0, firstResize.Width, firstResize.Height);
-                        break;
-                    case MapInfo.ResizeType.FillTopLeft:
-                        gfx.DrawImage(firstResize, fillPixelsX, fillPixelsY, firstResize.Width, firstResize.Height);
-                        break;
-                    case MapInfo.ResizeType.FillTopRight:
-                        gfx.DrawImage(firstResize, 0, fillPixelsY, firstResize.Width, firstResize.Height);
-                        break;
-                    case MapInfo.ResizeType.FillBottomLeft:
-                        gfx.DrawImage(firstResize, fillPixelsX, 0, firstResize.Width, firstResize.Height);
-                        break;
-                    case MapInfo.ResizeType.FillBottomRight:
-                        gfx.DrawImage(firstResize, 0, 0, firstResize.Width, firstResize.Height);
-                        break;
-                    case MapInfo.ResizeType.None:
-                        gfx.DrawImage(firstResize, 0, 0, firstResize.Width, firstResize.Height);
-                        break;
-                    default:
-                        Console.WriteLine("Invalid resize type.");
-                        break;
-                }
+                gfx.DrawImage(firstResize, mapInfo.RenderPoint);
 
                 
                 Directory.SetCurrentDirectory(fileName + " Maps");
                 PixelFormat format = image.PixelFormat;
 
-                // make map tiles: mapSize / (distanceSquares / mapSquares)
-                // base square PPI = 100, mapSquares = aspectX / basePPI
-                
 
                 for (int i = 0; i < mapAmtX; i++)
                 {
                     for (int j = 0; j < mapAmtY; j++)
                     {
                         Rectangle cropArea = new Rectangle(i * (resizedImg.Width / mapAmtX), j * (resizedImg.Height / mapAmtY), (resizedImg.Width / mapAmtX), (resizedImg.Height / mapAmtY));
-                        // Bitmap newImg = new Bitmap(resizedImg.Clone(cropArea, format), new Size(minXRes, minYRes));
                         resizedImg.Clone(cropArea, format).Save(fileName + "_" + i + "_" + j + ".png");
                     }
                 }
