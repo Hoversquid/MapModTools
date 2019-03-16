@@ -16,15 +16,6 @@ aspect ratio will be able to be changed when program moves away from being depen
 number of scaled maps on display:
 maps that are tiled must be in correct ratio or have blank space added to end
 
-39 x 30 map, scale 2, 2925 x 2251
-3 by 3 maps
-13 x 10 sqaures per map
-
-1800 / 18 = 100 pixels^2 per square
-2925 / 39 = 75 pixels^2 per square
-destWidth / (distX / scale) = 100pxl^2
-baseDPI x (distX / scale) = destWidth
-
 Adding Maps:
 
 save all map information in text file:
@@ -36,7 +27,9 @@ save all map information in text file:
 (OffsetX)
 (OffsetY)
 
-edit map option to change these variables or the map to tile
+Folder System:
+
+Source Image Folder, Resized-to-Aspect Images, Tiled Image Folders, Display Info JSON
 
 Map Scale:
 
