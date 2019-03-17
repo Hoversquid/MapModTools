@@ -29,7 +29,7 @@ save all map information in text file:
 
 Folder System:
 
-Source Image Folder, Resized-to-Aspect Images, Tiled Image Folders, Display Info JSON
+Source Image Folder, Resized-to-Aspect Images, Tiled Image Folders, Display Info JSON, Map Info JSON
 
 Map Scale:
 
