@@ -17,7 +17,6 @@ namespace MapImageTileTool
         int OffsetY { get; set; }
         int DistanceX { get; set; }
         int DistanceY { get; set; }
-        string JSONString { get; set; }
         string FilePath { get; set; }
     }
     public class ResizedMap : IMaps
@@ -36,23 +35,10 @@ namespace MapImageTileTool
         }
         public string FilePath { get; set; }
     }
-    class TiledMapInfo : IMaps
+    public class TiledMap : ResizedMap
     {
-        public string MapName { get; set; }
-        public int Scale { get; set; }
         public int Width { get; set; }
         public int Height { get; set; }
-        public int OffsetX { get; set; }
-        public int OffsetY { get; set; }
-        public int DistanceX { get; set; }
-        public int DistanceY { get; set; }
-        public Point RenderPoint { get; set; }
-        public string JSONString { get; set; }
-        public void SetFill(int X, int Y)
-        {
-            RenderPoint = new Point(X, Y);
-        }
-        public string FilePath { get; set; }
-
+        public string TiledImageDirectory { get; set; }
     }
 }

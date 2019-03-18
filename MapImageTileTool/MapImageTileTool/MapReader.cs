@@ -45,7 +45,7 @@ namespace MapImageTileTool
             Console.WriteLine("\n Select Map Folder");
             for (int i = 0; i < depos.Length; i++)
             {
-                Console.WriteLine(i + ": " + depos[i]);
+                Console.WriteLine("{0}: {1}", i + 1, depos[i]);
             }
 
             int depoSelect = 0;
@@ -64,7 +64,7 @@ namespace MapImageTileTool
             }
             else
             {
-                DepoDirectory = Path.GetDirectoryName(depos[depoSelect]);
+                DepoDirectory = Path.GetDirectoryName(depos[depoSelect - 1]);
                 Console.WriteLine("Selecting {0}.", DepoDirectory);
                 SetDepoInfo();
                 SetMapArray();
@@ -154,11 +154,19 @@ namespace MapImageTileTool
                 ResizedMap newMap = new ResizedMap();
                 PromptMapInfo(newMap);
                 ResizeMap(imageName, newMap);
+                AddMapJSON(newMap);
                 Console.WriteLine("{0} has been resized and saved to \"Resized Images\" folder.", imageName);
             }
         }
 
-        public bool CheckValidBoundedInt(string input, out int num, int lowerBound, bool isBounded)
+        public void AddMapJSON(IMaps map)
+        {
+            string json = JsonConvert.SerializeObject(map, Formatting.Indented);
+            JToken jToken = JToken.FromObject(map);
+            MapArray.Add(jToken);
+        }
+
+        public bool CheckValidMapInput(string input, out int num, int lowerBound, bool isBounded)
         {
             num = 0;
             int convertedInt = 0;
@@ -187,7 +195,7 @@ namespace MapImageTileTool
             map.MapName = Console.ReadLine();
             Console.Write("Map Scale: ");
             int num;
-            if (!CheckValidBoundedInt(Console.ReadLine(), out num, 1, true))
+            if (!CheckValidMapInput(Console.ReadLine(), out num, 1, true))
             {
                 return;
             }
@@ -197,7 +205,7 @@ namespace MapImageTileTool
             }
 
             Console.Write("Distance X: ");
-            if (!CheckValidBoundedInt(Console.ReadLine(), out num, 1, true))
+            if (!CheckValidMapInput(Console.ReadLine(), out num, 1, true))
             {
                 return;
             }
@@ -207,7 +215,7 @@ namespace MapImageTileTool
             }
 
             Console.Write("Distance Y: ");
-            if (!CheckValidBoundedInt(Console.ReadLine(), out num, 1, true))
+            if (!CheckValidMapInput(Console.ReadLine(), out num, 1, true))
             {
                 return;
             }
@@ -217,7 +225,7 @@ namespace MapImageTileTool
             }
 
             Console.Write("Offset X: ");
-            if (!CheckValidBoundedInt(Console.ReadLine(), out num, 0, false))
+            if (!CheckValidMapInput(Console.ReadLine(), out num, 0, false))
             {
                 return;
             }
@@ -227,7 +235,7 @@ namespace MapImageTileTool
             }
 
             Console.Write("Offset Y: ");
-            if (!CheckValidBoundedInt(Console.ReadLine(), out num, 0, false))
+            if (!CheckValidMapInput(Console.ReadLine(), out num, 0, false))
             {
                 return;
             }
@@ -237,9 +245,28 @@ namespace MapImageTileTool
             }
         }
 
-        public void AddTiledMap()
+        public void AddTiledMap(ResizedMap map)
         {
+            // makes a copy of a resized map image and tiles it for aspect ratio
+            // replaces ResizedMap JToken with TiledMap JToken on array
 
+            using (FileStream pngStream = new FileStream(map.FilePath, FileMode.Open, FileAccess.Read))
+            using (var image = new Bitmap(pngStream))
+            {
+                PixelFormat format = image.PixelFormat;
+                int mapAmtX = (int)Math.Ceiling((double)map.DistanceX / map.DistanceY);
+                int mapAmtY = (int)Math.Ceiling((double)map.DistanceY / Display.MapSqY);
+
+                for (int i = 0; i < mapAmtX; i++)
+                {
+                    for (int j = 0; j < mapAmtY; j++)
+                    {
+                        Rectangle cropArea = new Rectangle(i * (image.Width / mapAmtX), j * (image.Height / mapAmtY), (image.Width / mapAmtX), (image.Height / mapAmtY));
+                        // Bitmap newImg = new Bitmap(resizedImg.Clone(cropArea, format), new Size(minXRes, minYRes));
+                        resizedImg.Clone(cropArea, format).Save(fileName + "_" + i + "_" + j + ".png");
+                    }
+                }
+            }
         }
 
         public void ResizeMap(string fileName, ResizedMap map)
@@ -247,8 +274,7 @@ namespace MapImageTileTool
             using (FileStream pngStream = new FileStream(fileName, FileMode.Open, FileAccess.Read))
             using (var image = new Bitmap(pngStream))
             {
-                int mapAmtX = (int)Math.Ceiling((double)map.DistanceX / map.DistanceY);
-                int mapAmtY = (int)Math.Ceiling((double)map.DistanceY / Display.MapSqY);
+                
 
                 // minimum resolution must be found for grid to fully display, and then add fill pixels to resize map to aspect ratio
                 int newResX = Display.PixelDensity * map.DistanceX;

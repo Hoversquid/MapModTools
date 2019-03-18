@@ -225,21 +225,7 @@ namespace MapImageTileTool
                 }
             }
 
-            Bitmap resizedImg = new Bitmap(destWidth, destHeight);
-            gfx = Graphics.FromImage(resizedImg);
-            gfx.DrawImage(firstResize, mapInfo.RenderPoint);
-
-            Directory.SetCurrentDirectory(fileName + " Maps");
-            PixelFormat format = image.PixelFormat;
-            for (int i = 0; i < mapAmtX; i++)
-            {
-                for (int j = 0; j < mapAmtY; j++)
-                {
-                    Rectangle cropArea = new Rectangle(i * (resizedImg.Width / mapAmtX), j * (resizedImg.Height / mapAmtY), (resizedImg.Width / mapAmtX), (resizedImg.Height / mapAmtY));
-                    // Bitmap newImg = new Bitmap(resizedImg.Clone(cropArea, format), new Size(minXRes, minYRes));
-                    resizedImg.Clone(cropArea, format).Save(fileName + "_" + i + "_" + j + ".png");
-                }
-            }
+            
         }
     }
     /*
