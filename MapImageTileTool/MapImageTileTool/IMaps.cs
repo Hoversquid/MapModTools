@@ -18,7 +18,6 @@ namespace MapImageTileTool
         int DistanceX { get; set; }
         int DistanceY { get; set; }
         string FilePath { get; set; }
-        JToken Token { get; set; }
         void PromptMapInfo();
         bool CheckValidMapInput(string input, out int num, int lowerBound, bool isBounded);
     }
@@ -33,7 +32,6 @@ namespace MapImageTileTool
         public Point RenderPoint { get; set; }
         public string JSONString { get; set; }
         public string FilePath { get; set; }
-        public JToken Token { get; set; }
         public void SetFill(int X, int Y)
         {
             RenderPoint = new Point(X, Y);
@@ -126,7 +124,6 @@ namespace MapImageTileTool
         public int Width { get; set; }
         public int Height { get; set; }
         public string TiledImageDirectory { get; set; }
-
         public TiledMap() : base() { }
         public TiledMap(ResizedMap map)
         {
