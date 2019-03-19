@@ -37,7 +37,7 @@ namespace MapImageTileTool
 
         public MapReader()
         {
-            
+
             StartDirectory = Path.Combine(Directory.GetCurrentDirectory(), @"Map Depos");
             if (!Directory.Exists(StartDirectory))
             {
@@ -92,7 +92,7 @@ namespace MapImageTileTool
                 else
                 {
                     DepoDirectory = depos[depoSelect - 1];
-                    
+
                 }
             }
 
@@ -108,12 +108,13 @@ namespace MapImageTileTool
             Console.Write("New map depo name: ");
             string mapDepoName = Console.ReadLine();
 
-            DepoDirectory = mapDepoName;
-            string newDepoPath = Path.Combine(StartDirectory, DepoDirectory);
+
+            string newDepoPath = Path.Combine(StartDirectory, mapDepoName);
+            DepoDirectory = newDepoPath;
             Directory.CreateDirectory(newDepoPath);
-            Directory.CreateDirectory(Path.Combine(newDepoPath, @"Source Images"));
-            Directory.CreateDirectory(Path.Combine(newDepoPath, @"Resized Images"));
-            Directory.CreateDirectory(Path.Combine(newDepoPath, @"Tiled Images"));
+            Directory.CreateDirectory(Path.Combine(DepoDirectory, @"Source Images"));
+            Directory.CreateDirectory(Path.Combine(DepoDirectory, @"Resized Images"));
+            Directory.CreateDirectory(Path.Combine(DepoDirectory, @"Tiled Images"));
         }
 
         public void OpenMainMenu()
@@ -175,20 +176,16 @@ namespace MapImageTileTool
                 }
 
                 infoPath = Path.Combine(DepoDirectory, "MapInfo.JSON");
+
                 if (!File.Exists(infoPath))
                 {
                     Console.WriteLine("No Map Info file found, creating default MapInfo.JSON file.");
                     string JSONstring = "{\nMaps: []\n}";
                     File.WriteAllText(infoPath, JSONstring);
-                    MapArray = new JArray(JSONstring);
                 }
-
-                // read in "Maps" array
                 using (StreamReader reader = File.OpenText(infoPath))
                 {
-                    JObject mapsInfo = (JObject)JToken.ReadFrom(new JsonTextReader(reader));
-                    MapArray = new JArray(mapsInfo);
-                    
+                    MapArray = (JArray)JToken.ReadFrom(new JsonTextReader(reader))["Maps"];
                 }
 
                 return true;
@@ -198,7 +195,10 @@ namespace MapImageTileTool
         public void AddMapJSON(IMaps map)
         {
             string json = JsonConvert.SerializeObject(map, Formatting.Indented);
-            MapArray.Add(json);
+            JToken newObj = JToken.Parse(json);
+            MapArray.Add(newObj);
+            string fileText = "{\nMaps: " + MapArray.ToString() + "\n}";
+            File.WriteAllText(Path.Combine(DepoDirectory, @"MapInfo.JSON"), fileText);
         }
 
         public void AddResizedMap()
@@ -208,9 +208,13 @@ namespace MapImageTileTool
             string filePath = Path.Combine(DepoDirectory, @"Source Images", imageName + ".png");
             if (File.Exists(filePath))
             {
-                ResizedMap newMap = new ResizedMap();
-                ResizeMap(imageName + ".png", newMap);
-                AddMapJSON(newMap);
+                ResizedMap map = new ResizedMap();
+                if (map.PromptMapInfo())
+                {
+                    ResizeMap(imageName + ".png", map);
+                    AddMapJSON(map);
+                }
+
                 Console.WriteLine("{0} has been resized and saved to \"Resized Images\" folder.", imageName);
             }
             else
@@ -370,7 +374,10 @@ namespace MapImageTileTool
                         else if (select == mapNames.Count + 1)
                         {
                             ResizedMap resizedMap = new ResizedMap();
-                            TileMap(resizedMap);
+                            if (resizedMap.PromptMapInfo())
+                            {
+                                TileMap(resizedMap);
+                            }
                         }
                         else
                         {
@@ -393,14 +400,17 @@ namespace MapImageTileTool
                 {
                     Console.WriteLine("No map info found for this image. Please enter it now.");
                     ResizedMap resizedMap = new ResizedMap();
-                    TileMap(resizedMap);
+                    if (resizedMap.PromptMapInfo())
+                    {
+                        TileMap(resizedMap);
+                    }
                 }
             }
         }
 
         public void TileMap(ResizedMap oldMap)
         {
-            TiledMap map = new TiledMap(oldMap);
+            TiledMap map = new TiledMap(oldMap, Display.MapSqX, Display.MapSqY);
             Console.WriteLine("Scale for tiled maps: ");
 
             int num;
@@ -418,18 +428,16 @@ namespace MapImageTileTool
             map.TiledImageDirectory = Path.Combine(DepoDirectory, @"Tiled Maps", map.MapName);
             Directory.CreateDirectory(map.TiledImageDirectory);
 
-            using (FileStream pngStream = new FileStream(map.FilePath, FileMode.Open, FileAccess.Read))
+            using (FileStream pngStream = new FileStream(oldMap.FilePath, FileMode.Open, FileAccess.Read))
             using (var image = new Bitmap(pngStream))
             {
                 PixelFormat format = image.PixelFormat;
-                map.Width = (int)Math.Ceiling((double)map.DistanceX / Display.MapSqX * map.Scale);
-                map.Height = (int)Math.Ceiling((double)map.DistanceY / Display.MapSqY * map.Scale);
 
-                for (int i = 0; i < map.Width; i++)
+                for (int i = 0; i < map.TilesX; i++)
                 {
-                    for (int j = 0; j < map.Height; j++)
+                    for (int j = 0; j < map.TilesY; j++)
                     {
-                        Rectangle cropArea = new Rectangle(i * (image.Width / map.Width), j * (image.Height / map.Height), (image.Width / map.Width), (image.Height / map.Height));
+                        Rectangle cropArea = new Rectangle(i * (image.Width / map.TilesX), j * (image.Height / map.TilesY), (image.Width / map.TilesX), (image.Height / map.TilesY));
                         image.Clone(cropArea, format).Save(Path.Combine(map.TiledImageDirectory, map.MapName + "_" + i + "_" + j + ".png"));
                     }
                 }

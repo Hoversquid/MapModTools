@@ -13,24 +13,27 @@ namespace MapImageTileTool
     {
         string MapName { get; set; }
         int Scale { get; set; }
+        int TilesX { get; set; }
+        int TilesY { get; set; }
         int OffsetX { get; set; }
         int OffsetY { get; set; }
         int DistanceX { get; set; }
         int DistanceY { get; set; }
         string FilePath { get; set; }
-        void PromptMapInfo();
+        bool PromptMapInfo();
         bool CheckValidMapInput(string input, out int num, int lowerBound, bool isBounded);
     }
     public class ResizedMap : IMaps
     {
         public string MapName { get; set; }
         public int Scale { get; set; }
+        public int TilesX { get; set; }
+        public int TilesY { get; set; }
         public int OffsetX { get; set; }
         public int OffsetY { get; set; }
         public int DistanceX { get; set; }
         public int DistanceY { get; set; }
         public Point RenderPoint { get; set; }
-        public string JSONString { get; set; }
         public string FilePath { get; set; }
         public void SetFill(int X, int Y)
         {
@@ -38,7 +41,6 @@ namespace MapImageTileTool
         }
         public ResizedMap()
         {
-            PromptMapInfo();
         }
 
         public bool CheckValidMapInput(string input, out int num, int lowerBound, bool isBounded)
@@ -63,7 +65,7 @@ namespace MapImageTileTool
             num = convertedInt;
             return true;
         }
-        public void PromptMapInfo()
+        public bool PromptMapInfo()
         {
             Console.Write("Map Name: ");
             MapName = Console.ReadLine();
@@ -71,7 +73,7 @@ namespace MapImageTileTool
             int num;
             if (!CheckValidMapInput(Console.ReadLine(), out num, 1, true))
             {
-                return;
+                return false;
             }
             else
             {
@@ -81,7 +83,7 @@ namespace MapImageTileTool
             Console.Write("Distance X: ");
             if (!CheckValidMapInput(Console.ReadLine(), out num, 1, true))
             {
-                return;
+                return false;
             }
             else
             {
@@ -91,7 +93,7 @@ namespace MapImageTileTool
             Console.Write("Distance Y: ");
             if (!CheckValidMapInput(Console.ReadLine(), out num, 1, true))
             {
-                return;
+                return false;
             }
             else
             {
@@ -101,7 +103,7 @@ namespace MapImageTileTool
             Console.Write("Offset X: ");
             if (!CheckValidMapInput(Console.ReadLine(), out num, 0, false))
             {
-                return;
+                return false;
             }
             else
             {
@@ -111,12 +113,15 @@ namespace MapImageTileTool
             Console.Write("Offset Y: ");
             if (!CheckValidMapInput(Console.ReadLine(), out num, 0, false))
             {
-                return;
+                return false;
             }
             else
             {
                 OffsetY = num;
             }
+            TilesX = 1;
+            TilesY = 1;
+            return true;
         }
     }
     public class TiledMap : ResizedMap
@@ -125,7 +130,7 @@ namespace MapImageTileTool
         public int Height { get; set; }
         public string TiledImageDirectory { get; set; }
         public TiledMap() : base() { }
-        public TiledMap(ResizedMap map)
+        public TiledMap(ResizedMap map, int displayX, int displayY)
         {
             MapName = map.MapName;
             Scale = map.Scale;
@@ -134,6 +139,8 @@ namespace MapImageTileTool
             DistanceX = map.DistanceX;
             DistanceY = map.DistanceY;
             RenderPoint = map.RenderPoint;
+            TilesX = (int)Math.Ceiling((double)DistanceX / displayX * Scale);
+            TilesY = (int)Math.Ceiling((double)DistanceY / displayY * Scale);
         }
     }
 }
