@@ -35,9 +35,14 @@ namespace MapImageTileTool
         //public string MapInfoPath;
         public JArray MapArray;
 
-        public MapReader(string dir)
+        public MapReader()
         {
-            StartDirectory = dir;
+            
+            StartDirectory = Path.Combine(Directory.GetCurrentDirectory(), @"Map Depos");
+            if (!Directory.Exists(StartDirectory))
+            {
+                Directory.CreateDirectory(StartDirectory);
+            }
             DepoDirectory = string.Empty;
             string[] depos = Directory.GetDirectories(StartDirectory);
 
@@ -47,13 +52,7 @@ namespace MapImageTileTool
                 switch (Console.ReadLine().ToUpper())
                 {
                     case "Y":
-                        Console.Write("New map depo name: ");
-                        string mapDepoName = Console.ReadLine();
-                        DepoDirectory = Path.Combine(StartDirectory, mapDepoName);
-                        Directory.CreateDirectory(DepoDirectory);
-                        Directory.CreateDirectory(Path.Combine(DepoDirectory, @"Source Images"));
-                        Directory.CreateDirectory(Path.Combine(DepoDirectory, @"Resized Images"));
-                        Directory.CreateDirectory(Path.Combine(DepoDirectory, @"Tiled Images"));
+                        CreateDepo();
                         break;
 
                     default:
@@ -63,10 +62,12 @@ namespace MapImageTileTool
             else
             {
                 Console.WriteLine("\n Select Map Folder");
-                for (int i = 0; i < depos.Length; i++)
+                int i;
+                for (i = 0; i < depos.Length; i++)
                 {
-                    Console.WriteLine("{0}: {1}", i + 1, depos[i]);
+                    Console.WriteLine("{0}: {1}", i + 1, Path.GetFileName(depos[i]));
                 }
+                Console.WriteLine("{0}: {1}", i + 1, "Create new depo");
 
                 int depoSelect = 0;
                 try
@@ -79,14 +80,18 @@ namespace MapImageTileTool
                     return;
                 }
 
-                if (depoSelect < 1 || depoSelect > depos.Length + 1)
+                if (depoSelect < 1 || depoSelect > depos.Length + 2)
                 {
                     Console.WriteLine("Invalid selection");
                     return;
                 }
+                else if (depoSelect == i + 1)
+                {
+                    CreateDepo();
+                }
                 else
                 {
-                    DepoDirectory = Path.GetDirectoryName(depos[depoSelect - 1]);
+                    DepoDirectory = depos[depoSelect - 1];
                     
                 }
             }
@@ -96,6 +101,19 @@ namespace MapImageTileTool
             {
                 OpenMainMenu();
             }
+        }
+
+        public void CreateDepo()
+        {
+            Console.Write("New map depo name: ");
+            string mapDepoName = Console.ReadLine();
+
+            DepoDirectory = mapDepoName;
+            string newDepoPath = Path.Combine(StartDirectory, DepoDirectory);
+            Directory.CreateDirectory(newDepoPath);
+            Directory.CreateDirectory(Path.Combine(newDepoPath, @"Source Images"));
+            Directory.CreateDirectory(Path.Combine(newDepoPath, @"Resized Images"));
+            Directory.CreateDirectory(Path.Combine(newDepoPath, @"Tiled Images"));
         }
 
         public void OpenMainMenu()
@@ -162,14 +180,14 @@ namespace MapImageTileTool
                     Console.WriteLine("No Map Info file found, creating default MapInfo.JSON file.");
                     string JSONstring = "{\nMaps: []\n}";
                     File.WriteAllText(infoPath, JSONstring);
-                    MapArray = JArray.Parse(JSONstring);
+                    MapArray = new JArray(JSONstring);
                 }
 
                 // read in "Maps" array
                 using (StreamReader reader = File.OpenText(infoPath))
                 {
                     JObject mapsInfo = (JObject)JToken.ReadFrom(new JsonTextReader(reader));
-                    MapArray = (JArray)mapsInfo["Maps"];
+                    MapArray = new JArray(mapsInfo);
                     
                 }
 
@@ -186,22 +204,27 @@ namespace MapImageTileTool
         public void AddResizedMap()
         {
             Console.WriteLine("Select image name from the \"Source Images\" folder to resize:");
-            string imageName = Console.ReadLine() + ".png";
-            string filePath = Path.Combine(DepoDirectory, @"Source Images", imageName);
+            string imageName = Console.ReadLine();
+            string filePath = Path.Combine(DepoDirectory, @"Source Images", imageName + ".png");
             if (File.Exists(filePath))
             {
                 ResizedMap newMap = new ResizedMap();
-                ResizeMap(imageName, newMap);
+                ResizeMap(imageName + ".png", newMap);
                 AddMapJSON(newMap);
                 Console.WriteLine("{0} has been resized and saved to \"Resized Images\" folder.", imageName);
+            }
+            else
+            {
+                Console.WriteLine("File {0} not found.", imageName + ".png");
             }
         }
 
         public void ResizeMap(string fileName, ResizedMap map)
         {
+            string mapPath = Path.Combine(DepoDirectory, @"Source Images", fileName);
             // eventually this can create an image and place cropped versions of that image to other map images that have overlapping distance renderings
             // will need to work with tiled maps too
-            using (FileStream pngStream = new FileStream(fileName, FileMode.Open, FileAccess.Read))
+            using (FileStream pngStream = new FileStream(mapPath, FileMode.Open, FileAccess.Read))
             using (var image = new Bitmap(pngStream))
             {
 
@@ -247,8 +270,8 @@ namespace MapImageTileTool
                     Console.Write("\nSelect location on map to render blank space");
                     if (fillPixelsX > 0 && fillPixelsY > 0)
                     {
-                        Console.WriteLine("\n{0, -12} {0, 12}", "1: Top Left", "2: Top Right");
-                        Console.WriteLine("\n{0, -12} {0, 12}", "3: Bottom Left", "4: Bottom Right");
+                        Console.WriteLine("\n{0, -12} {1, 12}", "1: Top Left", "2: Top Right");
+                        Console.WriteLine("\n{0, -12} {1, 12}", "3: Bottom Left", "4: Bottom Right");
                         Console.Write("Other Input: Cancel\n\n Select: ");
 
                         switch (Console.ReadLine())
