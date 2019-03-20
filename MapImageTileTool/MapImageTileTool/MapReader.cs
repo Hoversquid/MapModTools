@@ -19,7 +19,7 @@ namespace MapImageTileTool
         public int MinResY { get; set; }
         public DisplayInfo()
         {
-            PixelDensity = 100;
+            PixelDensity = 200;
             MapSqX = 18;
             MapSqY = 12;
             MinResX = 3600;
@@ -233,15 +233,15 @@ namespace MapImageTileTool
             {
 
                 // minimum resolution must be found for grid to fully display, and then add fill pixels to resize map to aspect ratio
-                int newResX = Display.PixelDensity * (map.DistanceX / map.Scale);
-                int newResY = Display.PixelDensity * (map.DistanceY / map.Scale);
+                int newResX = Display.PixelDensity * (int)((double)map.DistanceX / (Display.MapSqX * map.Scale));
+                int newResY = Display.PixelDensity * (int)((double)map.DistanceY / map.Scale);
 
                 // scales image to hold correct number of maps within aspect ratio
-                Bitmap firstResize = new Bitmap(image, new Size(newResX, newResY));
+                //Bitmap firstResize = new Bitmap(image, new Size(newResX, newResY));
 
                 // initializes variables to set desired width and height by adding blank space
-                int destWidth = firstResize.Width;
-                int destHeight = firstResize.Height;
+                int destWidth = newResX;
+                int destHeight = newResY;
 
                 // gets the current resolution scale by the floored ratio of the current resolution (increased by one to increase PPI)
                 int currRes = (destWidth / destHeight) + 1;
@@ -269,7 +269,7 @@ namespace MapImageTileTool
                     int fillPixelsX = destWidth - image.Width;
                     int fillPixelsY = destHeight - image.Height;
 
-                    Console.WriteLine("\nImage of " + firstResize.Width + "x" + firstResize.Height + " will be resized to " + destWidth + "x" + destHeight + ".");
+                    Console.WriteLine("\nImage of " + image.Width + "x" + image.Height + " will be resized to " + destWidth + "x" + destHeight + ".");
                     Console.WriteLine("Scale original image or fill with blank space?");
                     Console.Write("\nSelect location on map to render blank space");
                     if (fillPixelsX > 0 && fillPixelsY > 0)
