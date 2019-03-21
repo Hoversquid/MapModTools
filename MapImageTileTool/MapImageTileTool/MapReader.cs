@@ -231,10 +231,17 @@ namespace MapImageTileTool
             using (FileStream pngStream = new FileStream(mapPath, FileMode.Open, FileAccess.Read))
             using (var image = new Bitmap(pngStream))
             {
+                // get the ratio of the map grid to the map grid and resize the image to fit
+                double scaleRatioX = (double)map.DistanceX / map.Scale;
+                double scaleRatioY = (double)map.DistanceY / map.Scale;
+                double resizeRatioX = Math.Ceiling((double)map.DistanceX / Display.MapSqX) * Display.MapSqX / map.Scale;
+                double resizeRatioY = Math.Ceiling((double)map.DistanceY / Display.MapSqY) * Display.MapSqY / map.Scale;
+
+
 
                 // minimum resolution must be found for grid to fully display, and then add fill pixels to resize map to aspect ratio
-                int newResX = Display.PixelDensity * (int)((double)map.DistanceX / (Display.MapSqX * map.Scale));
-                int newResY = Display.PixelDensity * (int)((double)map.DistanceY / map.Scale);
+                int newResX = (int)(image.Width * (resizeRatioX / map.DistanceX));
+                int newResY = (int)(image.Height * (resizeRatioY / map.DistanceY));
 
                 // scales image to hold correct number of maps within aspect ratio
                 //Bitmap firstResize = new Bitmap(image, new Size(newResX, newResY));

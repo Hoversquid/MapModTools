@@ -22,23 +22,23 @@ save all map information in text file:
 
 (Map Name)
 (Scale)
-(Width in Maps)
-(Height in Maps)
+(Tiling)
+(SquaresX)
+(SquaresY)
 (OffsetX)
 (OffsetY)
 
-distance in sq * PixelDens = amount of pixels to be scaled down
-map sq * 200 = scale size
-newRes / image distance = (rendered distance / scale size)
+scaleFactor * imagePxls = newRes
+(displayGridPxls / (mapPxls / mapSqs)) / displayScale = newRes / Pxls
+displayGrid * mapSqs / displayScale = newRes
 
-40sq map, 26px
-1040 / 40 = 26
-120 pixeldsny display grid
-26 / scale = 120 / feet
-120 * (scale / 26) = feet = 115.384
-115.384 x 1040 = 1200
-1200 / 40sq = 30
+distance = 1000
+scale = 1000 / 40 (mapSq) = 25
+ceiling(1000 / displayX) = 56
+56 * 18 / 25 = ~41
 
+25miles by 40 sq
+800px / 40 = 20
 
 Folder System:
 
