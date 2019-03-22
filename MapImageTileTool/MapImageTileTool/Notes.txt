@@ -37,8 +37,18 @@ scale = 1000 / 40 (mapSq) = 25
 ceiling(1000 / displayX) = 56
 56 * 18 / 25 = ~41
 
-25miles by 40 sq
-800px / 40 = 20
+1024 x 1024
+25.6 x 40 = 1024
+26 x 40 = 1040 (new res)
+
+ = 26
+ceiling(1040/18) = 58
+(58/26) = ~2 (display scale level)
+
+ceiling(imagePxl / imageSq) = imagePxlDen
+ceiling(displayPxlDen / imagePxlDen) = # squares (displayScale)
+imagePxlDen * # / displayPxlDen = scale amount to image
+imageScAmt * imagePxl = newRes
 
 Folder System:
 

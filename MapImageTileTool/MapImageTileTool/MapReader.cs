@@ -231,17 +231,20 @@ namespace MapImageTileTool
             using (FileStream pngStream = new FileStream(mapPath, FileMode.Open, FileAccess.Read))
             using (var image = new Bitmap(pngStream))
             {
-                // get the ratio of the map grid to the map grid and resize the image to fit
-                double scaleRatioX = (double)map.DistanceX / map.Scale;
-                double scaleRatioY = (double)map.DistanceY / map.Scale;
-                double resizeRatioX = Math.Ceiling((double)map.DistanceX / Display.MapSqX) * Display.MapSqX / map.Scale;
-                double resizeRatioY = Math.Ceiling((double)map.DistanceY / Display.MapSqY) * Display.MapSqY / map.Scale;
+                // get the ratio of the map grid to the display grid and resize the image to fit
+                int imagePxlDensityX = (int)Math.Ceiling(image.Width / ((double)map.DistanceX / map.Scale));
+                int imagePxlDensityY = (int)Math.Ceiling(image.Height / ((double)map.DistanceY / map.Scale));
 
+                int sqNumberX = (int)Math.Ceiling((double)Display.PixelDensity / imagePxlDensityX);
+                int sqNumberY = (int)Math.Ceiling((double)Display.PixelDensity / imagePxlDensityY);
+
+                int scaleByX = imagePxlDensityX * sqNumberX / Display.PixelDensity;
+                int scaleByY = imagePxlDensityY * sqNumberY / Display.PixelDensity;
 
 
                 // minimum resolution must be found for grid to fully display, and then add fill pixels to resize map to aspect ratio
-                int newResX = (int)(image.Width * (resizeRatioX / map.DistanceX));
-                int newResY = (int)(image.Height * (resizeRatioY / map.DistanceY));
+                int newResX = image.Width * scaleByX;
+                int newResY = image.Height * scaleByY;
 
                 // scales image to hold correct number of maps within aspect ratio
                 //Bitmap firstResize = new Bitmap(image, new Size(newResX, newResY));
