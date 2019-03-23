@@ -40,7 +40,7 @@ ceiling(1000 / displayX) = 56
 1024 x 1024
 25.6 x 40 = 1024
 26 x 40 = 1040 (new res)
-
+teas
  = 26
 ceiling(1040/18) = 58
 (58/26) = ~2 (display scale level)
