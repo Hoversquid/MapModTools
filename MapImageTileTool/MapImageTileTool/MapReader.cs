@@ -19,7 +19,7 @@ namespace MapImageTileTool
         public int MinResY { get; set; }
         public DisplayInfo()
         {
-            PixelDensity = 200;
+            PixelDensity = 100;
             MapSqX = 18;
             MapSqY = 12;
             MinResX = 3600;
@@ -113,8 +113,8 @@ namespace MapImageTileTool
             DepoDirectory = newDepoPath;
             Directory.CreateDirectory(newDepoPath);
             Directory.CreateDirectory(Path.Combine(DepoDirectory, @"Source Images"));
-            Directory.CreateDirectory(Path.Combine(DepoDirectory, @"Resized Images"));
-            Directory.CreateDirectory(Path.Combine(DepoDirectory, @"Tiled Images"));
+            Directory.CreateDirectory(Path.Combine(DepoDirectory, @"Resized Maps"));
+            Directory.CreateDirectory(Path.Combine(DepoDirectory, @"Tiled Maps"));
         }
 
         public void OpenMainMenu()
@@ -215,7 +215,7 @@ namespace MapImageTileTool
                     AddMapJSON(map);
                 }
 
-                Console.WriteLine("{0} has been resized and saved to \"Resized Images\" folder.", imageName);
+                Console.WriteLine("{0} has been resized and saved to \"Resized Maps\" folder.", imageName);
             }
             else
             {
@@ -231,30 +231,30 @@ namespace MapImageTileTool
             using (FileStream pngStream = new FileStream(mapPath, FileMode.Open, FileAccess.Read))
             using (var image = new Bitmap(pngStream))
             {
-                // get the ratio of the map grid to the display grid and resize the image to fit
-                int imagePxlDensityX = (int)Math.Ceiling(image.Width / ((double)map.DistanceX / map.Scale));
-                int imagePxlDensityY = (int)Math.Ceiling(image.Height / ((double)map.DistanceY / map.Scale));
+                double sqPxl = (double)image.Width / map.Scale;
+                double resizeRatio = Display.PixelDensity / sqPxl;
 
-                int sqNumberX = (int)Math.Ceiling((double)Display.PixelDensity / imagePxlDensityX);
-                int sqNumberY = (int)Math.Ceiling((double)Display.PixelDensity / imagePxlDensityY);
 
-                int scaleByX = imagePxlDensityX * sqNumberX / Display.PixelDensity;
-                int scaleByY = imagePxlDensityY * sqNumberY / Display.PixelDensity;
 
+                //int sqNumberX = (int)Math.Ceiling((double)Display.PixelDensity / imagePxlDensityX);
+                //int sqNumberY = (int)Math.Ceiling((double)Display.PixelDensity / imagePxlDensityY);
+
+                //double scaleByX = (double)(imagePxlDensityX * sqNumberX) / Display.PixelDensity;
+                //double scaleByY = (double)(imagePxlDensityY * sqNumberY) / Display.PixelDensity;
 
                 // minimum resolution must be found for grid to fully display, and then add fill pixels to resize map to aspect ratio
-                int newResX = image.Width * scaleByX;
-                int newResY = image.Height * scaleByY;
+                int newResX = (int)(image.Width * resizeRatio);
+                int newResY = (int)(image.Height * resizeRatio);
 
                 // scales image to hold correct number of maps within aspect ratio
-                //Bitmap firstResize = new Bitmap(image, new Size(newResX, newResY));
+                Bitmap firstResize = new Bitmap(image, new Size(newResX, newResY));
 
                 // initializes variables to set desired width and height by adding blank space
                 int destWidth = newResX;
                 int destHeight = newResY;
 
                 // gets the current resolution scale by the floored ratio of the current resolution (increased by one to increase PPI)
-                int currRes = (destWidth / destHeight) + 1;
+                int currRes = destWidth / destHeight;
                 double aspectRatio = (double)Display.MapSqX / Display.MapSqY;
 
                 // gets the next available resolution that stays within the correct aspect ratio
@@ -341,7 +341,7 @@ namespace MapImageTileTool
                 Bitmap resizedImg = new Bitmap(destWidth, destHeight);
                 gfx = Graphics.FromImage(resizedImg);
                 gfx.DrawImage(firstResize, map.RenderPoint);
-                string path = Path.Combine(DepoDirectory, @"Resized Images", map.MapName + ".png");
+                string path = Path.Combine(DepoDirectory, @"Resized Maps", map.MapName + ".png");
                 resizedImg.Save(path);
                 map.FilePath = path;
             }
@@ -349,9 +349,9 @@ namespace MapImageTileTool
 
         public void AddTiledMap()
         {
-            Console.WriteLine("Select image to tile from the \"Resized Images\" folder.");
+            Console.WriteLine("Select image to tile from the \"Resized Maps\" folder.");
             string imageSelect = Console.ReadLine();
-            string filePath = Path.Combine(DepoDirectory, @"Resized Images", imageSelect + ".png");
+            string filePath = Path.Combine(DepoDirectory, @"Resized Maps", imageSelect + ".png");
             if (File.Exists(filePath))
             {
                 List<JObject> mapNames = new List<JObject>();
