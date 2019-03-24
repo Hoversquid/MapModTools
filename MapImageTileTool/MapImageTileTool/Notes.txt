@@ -28,22 +28,15 @@ save all map information in text file:
 (OffsetX)
 (OffsetY)
 
-scaleFactor * imagePxls = newRes
-(displayGridPxls / (mapPxls / mapSqs)) / displayScale = newRes / Pxls
-displayGrid * mapSqs / displayScale = newRes
+2045 x 1479
 
-distance = 1000
-scale = 1000 / 40 (mapSq) = 25
-ceiling(1000 / displayX) = 56
-56 * 18 / 25 = ~41
+display tries to fit the displayscale and mapscale 1:1
+mapscale: 52px/square
+displayRes: 18 sq * 100px = 1800
+1800 / 52 = 34.615
+1800 / 34.615 = 52
+52 -> 100 (100 * 40 = 4000)
 
-1024 x 1024
-25.6 x 40 = 1024
-26 x 40 = 1040 (new res)
-teas
- = 26
-ceiling(1040/18) = 58
-(58/26) = ~2 (display scale level)
 
 ceiling(imagePxl / imageSq) = imagePxlDen
 ceiling(displayPxlDen / imagePxlDen) = # squares (displayScale)

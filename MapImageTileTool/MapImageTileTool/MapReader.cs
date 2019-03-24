@@ -96,7 +96,7 @@ namespace MapImageTileTool
                 }
             }
 
-            Console.WriteLine("Selecting {0}.", DepoDirectory);
+            Console.WriteLine("Selecting {0}.", Path.GetFileName(DepoDirectory));
             if (SetDepoInfo())
             {
                 OpenMainMenu();
@@ -201,26 +201,86 @@ namespace MapImageTileTool
             File.WriteAllText(Path.Combine(DepoDirectory, @"MapInfo.JSON"), fileText);
         }
 
+        public string ReadFilesInDirectory(string path)
+        {
+            List<string> files = new List<string>();
+            foreach (string file in Directory.GetFiles(path))
+            {
+                if (Path.GetExtension(file) == ".png")
+                {
+                    files.Add(file);
+                }
+            }
+            for (int i = 0; i < files.Count; i++)
+            {
+                Console.WriteLine("{0}: {1}", i + 1, Path.GetFileName(files[i]));
+            }
+            Console.Write("Select file: ");
+
+            int input;
+            try
+            {
+               input = Convert.ToInt32(Console.ReadLine());
+            }
+            catch (FormatException)
+            {
+                Console.WriteLine("Invalid selection");
+                return "";
+            }
+            if (input > 0 && input < files.Count)
+            {
+                return files[input - 1];
+            }
+            else
+            {
+                Console.WriteLine("Invalid Selection");
+                return "";
+            }
+        }
+
         public void AddResizedMap()
         {
             Console.WriteLine("Select image name from the \"Source Images\" folder to resize:");
-            string imageName = Console.ReadLine();
-            string filePath = Path.Combine(DepoDirectory, @"Source Images", imageName + ".png");
-            if (File.Exists(filePath))
+            string filePath = ReadFilesInDirectory(Path.Combine(DepoDirectory, @"Source Images"));
+            if (filePath != "" && File.Exists(filePath))
             {
                 ResizedMap map = new ResizedMap();
                 if (map.PromptMapInfo())
                 {
-                    ResizeMap(imageName + ".png", map);
+                    ResizeMap(filePath, map);
                     AddMapJSON(map);
                 }
 
-                Console.WriteLine("{0} has been resized and saved to \"Resized Maps\" folder.", imageName);
+                Console.WriteLine("{0} has been resized and saved to \"Resized Maps\" folder.", filePath);
             }
             else
             {
-                Console.WriteLine("File {0} not found.", imageName + ".png");
+                Console.WriteLine("File {0} not found.", filePath);
             }
+        }
+
+        //defines function that calculates the gcd with parameters a and b
+        static int gcd(int a, int b)
+        {
+            //find the gcd using the Euclid’s algorithm
+            while (a != b)
+                if (a < b) b = b - a;
+                else a = a - b;
+            //since at this point a=b, the gcd can be either of them
+            //it is necessary to pass the gcd to the main function
+            return (a);
+        }
+
+        //defines function that reduces the fraction
+        static int division(int a, int b)
+        {
+            int remainder = a, quotient = 0;
+            while (remainder >= b)
+            {
+                remainder = remainder - b;
+                quotient++;
+            }
+            return (quotient);
         }
 
         public void ResizeMap(string fileName, ResizedMap map)
@@ -231,120 +291,141 @@ namespace MapImageTileTool
             using (FileStream pngStream = new FileStream(mapPath, FileMode.Open, FileAccess.Read))
             using (var image = new Bitmap(pngStream))
             {
-                double sqPxl = (double)image.Width / map.Scale;
-                double resizeRatio = Display.PixelDensity / sqPxl;
-
-
-
-                //int sqNumberX = (int)Math.Ceiling((double)Display.PixelDensity / imagePxlDensityX);
-                //int sqNumberY = (int)Math.Ceiling((double)Display.PixelDensity / imagePxlDensityY);
-
-                //double scaleByX = (double)(imagePxlDensityX * sqNumberX) / Display.PixelDensity;
-                //double scaleByY = (double)(imagePxlDensityY * sqNumberY) / Display.PixelDensity;
-
-                // minimum resolution must be found for grid to fully display, and then add fill pixels to resize map to aspect ratio
-                int newResX = (int)(image.Width * resizeRatio);
-                int newResY = (int)(image.Height * resizeRatio);
-
-                // scales image to hold correct number of maps within aspect ratio
-                Bitmap firstResize = new Bitmap(image, new Size(newResX, newResY));
-
-                // initializes variables to set desired width and height by adding blank space
-                int destWidth = newResX;
-                int destHeight = newResY;
-
-                // gets the current resolution scale by the floored ratio of the current resolution (increased by one to increase PPI)
-                int currRes = destWidth / destHeight;
-                double aspectRatio = (double)Display.MapSqX / Display.MapSqY;
-
-                // gets the next available resolution that stays within the correct aspect ratio
-                if ((double)destWidth / destHeight != aspectRatio || destWidth < Display.MinResX || destHeight < Display.MinResY)
+                int aspectX = Display.MapSqX, aspectY = Display.MapSqY;
+                int divisor = gcd(Display.MapSqX, Display.MapSqY);
+                if (divisor != 1)
                 {
-                    // fit map by adding blank pixels
-                    if (destWidth < Display.MinResX)
-                    {
-                        destWidth = Display.MinResX;
-                    }
-                    if (destHeight < Display.MinResY)
-                    {
-                        destHeight = Display.MinResY;
-                    }
-                    while ((double)destWidth / destHeight != aspectRatio)
-                    {
-                        currRes++;
-                        destWidth = currRes * Display.MapSqX * Display.PixelDensity;
-                        destHeight = currRes * Display.MapSqY * Display.PixelDensity;
-                    }
-
-                    int fillPixelsX = destWidth - image.Width;
-                    int fillPixelsY = destHeight - image.Height;
-
-                    Console.WriteLine("\nImage of " + image.Width + "x" + image.Height + " will be resized to " + destWidth + "x" + destHeight + ".");
-                    Console.WriteLine("Scale original image or fill with blank space?");
-                    Console.Write("\nSelect location on map to render blank space");
-                    if (fillPixelsX > 0 && fillPixelsY > 0)
-                    {
-                        Console.WriteLine("\n{0, -12} {1, 12}", "1: Top Left", "2: Top Right");
-                        Console.WriteLine("\n{0, -12} {1, 12}", "3: Bottom Left", "4: Bottom Right");
-                        Console.Write("Other Input: Cancel\n\n Select: ");
-
-                        switch (Console.ReadLine())
-                        {
-                            case "1":
-                                map.SetFill(fillPixelsX, fillPixelsY);
-                                break;
-                            case "2":
-                                map.SetFill(0, fillPixelsY);
-                                break;
-                            case "3":
-                                map.SetFill(fillPixelsX, 0);
-                                break;
-                            case "4":
-                                map.SetFill(0, 0);
-                                break;
-                            default:
-                                break;
-                        }
-                    }
-                    else if (fillPixelsX > 0)
-                    {
-                        Console.Write("{0, -12} {0, 12}", "1: Left", "2: Right\n\n Select: ");
-                        switch (Console.ReadLine())
-                        {
-                            case "1":
-                                map.SetFill(fillPixelsX, 0);
-                                break;
-                            case "2":
-                                map.SetFill(0, 0);
-                                break;
-                            default:
-                                break;
-                        }
-                    }
-                    else if (fillPixelsY > 0)
-                    {
-                        Console.Write("1: Top\n2: Bottom\n\nSelect: ");
-                        switch (Console.ReadLine())
-                        {
-                            case "1":
-                                map.SetFill(0, fillPixelsY);
-                                break;
-                            case "2":
-                                map.SetFill(0, 0);
-                                break;
-                            default:
-                                break;
-                        }
-                    }
+                    aspectX = division(Display.MapSqX, divisor);
+                    aspectY = division(Display.MapSqY, divisor);
                 }
 
-                Bitmap resizedImg = new Bitmap(destWidth, destHeight);
+                aspectX *= Display.PixelDensity;
+                aspectY *= Display.PixelDensity;
+
+                // amount of squares contained by each dimension
+                double squaresX = (double)map.DistanceX / map.Scale;
+                double squaresY = (double)map.DistanceY / map.Scale;
+
+                // amount of pixels per square when scaled
+                int sqPxlX = (int)Math.Ceiling(image.Width / squaresX);
+                int sqPxlY = (int)Math.Ceiling(image.Width / squaresY);
+
+                // ratio between display scale and map scale
+                double scaledSqSizeX = (double)sqPxlX / Display.PixelDensity;
+                double scaledSqSizeY = (double)sqPxlY / Display.PixelDensity;
+
+                // total size of grid
+                int scaledSizeX = (int)(Display.PixelDensity * squaresX);
+                int scaledSizeY = (int)(Display.PixelDensity * squaresY);
+
+                int scalingToAspectX = (int)Math.Ceiling((double)scaledSizeX / aspectX);
+                int scalingToAspectY = (int)Math.Ceiling((double)scaledSizeY / aspectY);
+
+                // ratio between total display size and rescaled map
+                //double scaledRatioX = scaledSizeX / scaledSqSizeX;
+                //double scaledRatioY = scaledSizeY / scaledSqSizeY;
+
+                Size newSize = new Size(image.Width * scalingToAspectX, image.Height * scalingToAspectY);
+                
+                // scales image to hold correct number of maps within aspect ratio
+                Bitmap firstResize = new Bitmap(image, newSize);
+
+
+                Bitmap resizedImg = new Bitmap(scaledSizeX, scaledSizeY);
                 gfx = Graphics.FromImage(resizedImg);
                 gfx.DrawImage(firstResize, map.RenderPoint);
                 string path = Path.Combine(DepoDirectory, @"Resized Maps", map.MapName + ".png");
                 resizedImg.Save(path);
                 map.FilePath = path;
             }
+        }
+
+        void SetMapFill(int initWidth, int initHeight, ResizedMap map, Image image)
+        {
+            int currRes = initWidth / initHeight;
+            double aspectRatio = (double)Display.MapSqX / Display.MapSqY;
+
+            // gets the next available resolution that stays within the correct aspect ratio
+            if ((double)initWidth / initHeight != aspectRatio || initWidth < Display.MinResX || initHeight < Display.MinResY)
+            {
+                // fit map by adding blank pixels
+                if (initWidth < Display.MinResX)
+                {
+                    initWidth = Display.MinResX;
+                }
+                if (initHeight < Display.MinResY)
+                {
+                    initHeight = Display.MinResY;
+                }
+                while ((double)initWidth / initHeight != aspectRatio)
+                {
+                    currRes++;
+                    initWidth = currRes * Display.MapSqX * Display.PixelDensity;
+                    initHeight = currRes * Display.MapSqY * Display.PixelDensity;
+                }
+
+                int fillPixelsX = initWidth - image.Width;
+                int fillPixelsY = initHeight - image.Height;
+
+                Console.WriteLine("\nImage of " + image.Width + "x" + image.Height + " will be resized to " + initWidth + "x" + initHeight + ".");
+                Console.WriteLine("Scale original image or fill with blank space?");
+                Console.Write("\nSelect location on map to render blank space");
+                if (fillPixelsX > 0 && fillPixelsY > 0)
+                {
+                    Console.WriteLine("\n{0, -12} {1, 12}", "1: Top Left", "2: Top Right");
+                    Console.WriteLine("\n{0, -12} {1, 12}", "3: Bottom Left", "4: Bottom Right");
+                    Console.Write("Other Input: Cancel\n\n Select: ");
+
+                    switch (Console.ReadLine())
+                    {
+                        case "1":
+                            map.SetFill(fillPixelsX, fillPixelsY);
+                            break;
+                        case "2":
+                            map.SetFill(0, fillPixelsY);
+                            break;
+                        case "3":
+                            map.SetFill(fillPixelsX, 0);
+                            break;
+                        case "4":
+                            map.SetFill(0, 0);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                else if (fillPixelsX > 0)
+                {
+                    Console.Write("{0, -12} {0, 12}", "1: Left", "2: Right\n\n Select: ");
+                    switch (Console.ReadLine())
+                    {
+                        case "1":
+                            map.SetFill(fillPixelsX, 0);
+                            break;
+                        case "2":
+                            map.SetFill(0, 0);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                else if (fillPixelsY > 0)
+                {
+                    Console.Write("1: Top\n2: Bottom\n\nSelect: ");
+                    switch (Console.ReadLine())
+                    {
+                        case "1":
+                            map.SetFill(0, fillPixelsY);
+                            break;
+                        case "2":
+                            map.SetFill(0, 0);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+
         }
 
         public void AddTiledMap()
