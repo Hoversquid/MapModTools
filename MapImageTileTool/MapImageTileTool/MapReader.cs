@@ -227,7 +227,7 @@ namespace MapImageTileTool
                 Console.WriteLine("Invalid selection");
                 return "";
             }
-            if (input > 0 && input < files.Count)
+            if (input > 0 && input < files.Count + 1)
             {
                 return files[input - 1];
             }
@@ -251,11 +251,11 @@ namespace MapImageTileTool
                     AddMapJSON(map);
                 }
 
-                Console.WriteLine("{0} has been resized and saved to \"Resized Maps\" folder.", filePath);
+                Console.WriteLine("{0} has been resized and saved to \"Resized Maps\" folder.", Path.GetFileName(filePath));
             }
             else
             {
-                Console.WriteLine("File {0} not found.", filePath);
+                Console.WriteLine("File {0} not found.", Path.GetFileName(filePath));
             }
         }
 
@@ -302,6 +302,10 @@ namespace MapImageTileTool
                 aspectX *= Display.PixelDensity;
                 aspectY *= Display.PixelDensity;
 
+                int primaryAspect = (aspectX > aspectY) ? aspectX : aspectY;
+
+                int scaledMapRatio = (int)Math.Ceiling((double)image.Width / primaryAspect);
+
                 // amount of squares contained by each dimension
                 double squaresX = (double)map.DistanceX / map.Scale;
                 double squaresY = (double)map.DistanceY / map.Scale;
@@ -310,32 +314,22 @@ namespace MapImageTileTool
                 int sqPxlX = (int)Math.Ceiling(image.Width / squaresX);
                 int sqPxlY = (int)Math.Ceiling(image.Width / squaresY);
 
-                // ratio between display scale and map scale
-                double scaledSqSizeX = (double)sqPxlX / Display.PixelDensity;
-                double scaledSqSizeY = (double)sqPxlY / Display.PixelDensity;
-
                 // total size of grid
                 int scaledSizeX = (int)(Display.PixelDensity * squaresX);
                 int scaledSizeY = (int)(Display.PixelDensity * squaresY);
 
-                int scalingToAspectX = (int)Math.Ceiling((double)scaledSizeX / aspectX);
-                int scalingToAspectY = (int)Math.Ceiling((double)scaledSizeY / aspectY);
 
-                // ratio between total display size and rescaled map
-                //double scaledRatioX = scaledSizeX / scaledSqSizeX;
-                //double scaledRatioY = scaledSizeY / scaledSqSizeY;
 
-                Size newSize = new Size(image.Width * scalingToAspectX, image.Height * scalingToAspectY);
+                Size newSize = new Size(aspectX * scaledMapRatio, aspectY * scaledMapRatio);
                 
                 // scales image to hold correct number of maps within aspect ratio
                 Bitmap firstResize = new Bitmap(image, newSize);
 
-
-                Bitmap resizedImg = new Bitmap(scaledSizeX, scaledSizeY);
-                gfx = Graphics.FromImage(resizedImg);
-                gfx.DrawImage(firstResize, map.RenderPoint);
+                //Bitmap resizedImg = new Bitmap(scaledSizeX, scaledSizeY);
+                //gfx = Graphics.FromImage(firstResize);
+                //gfx.DrawImage(firstResize, map.RenderPoint);
                 string path = Path.Combine(DepoDirectory, @"Resized Maps", map.MapName + ".png");
-                resizedImg.Save(path);
+                firstResize.Save(path);
                 map.FilePath = path;
             }
         }

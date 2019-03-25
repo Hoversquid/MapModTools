@@ -30,12 +30,28 @@ save all map information in text file:
 
 2045 x 1479
 
+1024 x 1024
+(find best fit for current res) 1024 x 1024 -> 3000 x 2000
+(find current sqaure pxl size) 1024 / 40sq = 25.6px
+(find square pxl size for canvas) 3000 / 40sq = 75px
+(scale size to set original sq size to display size) 100 / 25.6 = 3.90625
+(scaled size of aspect squares) 40 x 100 = 4000
+(set display scale to 2 (halves scaled size)) 40 x 50 = 2000
+
 display tries to fit the displayscale and mapscale 1:1
 mapscale: 52px/square
 displayRes: 18 sq * 100px = 1800
 1800 / 52 = 34.615
 1800 / 34.615 = 52
 52 -> 100 (100 * 40 = 4000)
+
+
+2100 x 1600
+
+4000 x 4000
+4200 x 2800
+6300 x 4200
+
 
 
 ceiling(imagePxl / imageSq) = imagePxlDen
