@@ -318,8 +318,6 @@ namespace MapImageTileTool
                 int scaledSizeX = (int)(Display.PixelDensity * squaresX);
                 int scaledSizeY = (int)(Display.PixelDensity * squaresY);
 
-
-
                 Size newSize = new Size(aspectX * scaledMapRatio, aspectY * scaledMapRatio);
                 
                 // scales image to hold correct number of maps within aspect ratio
