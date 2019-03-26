@@ -315,7 +315,6 @@ namespace MapImageTileTool
                     secRes = currRes * Display.MapSqY * Display.PixelDensity;
                 }
 
-<<<<<<< HEAD
                 double scaledX = squareAmtX * Display.PixelDensity;
                 double scaledY = squareAmtY * Display.PixelDensity;
                 while (scaledX * squareAmtX > initWidth || scaledY * squareAmtY > initHeight)
@@ -324,31 +323,6 @@ namespace MapImageTileTool
                     scaledX = (double)Display.PixelDensity / displayScale;
                     scaledY = (double)Display.PixelDensity / displayScale;
                 }
-=======
-                aspectX *= Display.PixelDensity;
-                aspectY *= Display.PixelDensity;
-
-                int primaryAspect = (aspectX > aspectY) ? aspectX : aspectY;
-
-                int scaledMapRatio = (int)Math.Ceiling((double)image.Width / primaryAspect);
-
-                // amount of squares contained by each dimension
-                double squaresX = (double)map.DistanceX / map.Scale;
-                double squaresY = (double)map.DistanceY / map.Scale;
-
-                // amount of pixels per square when scaled
-                int sqPxlX = (int)Math.Ceiling(image.Width / squaresX);
-                int sqPxlY = (int)Math.Ceiling(image.Width / squaresY);
-
-                // total size of grid
-                int scaledSizeX = (int)(Display.PixelDensity * squaresX);
-                int scaledSizeY = (int)(Display.PixelDensity * squaresY);
-
-                Size newSize = new Size(aspectX * scaledMapRatio, aspectY * scaledMapRatio);
-                
-                // scales image to hold correct number of maps within aspect ratio
-                Bitmap firstResize = new Bitmap(image, newSize);
->>>>>>> 75886bad5995d4fa7c32e8e2d2797e0162744133
 
                 Size gridSize = new Size((int)(scaledX * squareAmtX), (int)(scaledY * squareAmtY));
                 Bitmap gridResize = new Bitmap(image, gridSize);
