@@ -220,7 +220,7 @@ namespace MapImageTileTool
             int input;
             try
             {
-               input = Convert.ToInt32(Console.ReadLine());
+                input = Convert.ToInt32(Console.ReadLine());
             }
             catch (FormatException)
             {
@@ -286,252 +286,231 @@ namespace MapImageTileTool
         public void ResizeMap(string fileName, ResizedMap map)
         {
             string mapPath = Path.Combine(DepoDirectory, @"Source Images", fileName);
+
             // eventually this can create an image and place cropped versions of that image to other map images that have overlapping distance renderings
             // will need to work with tiled maps too
             using (FileStream pngStream = new FileStream(mapPath, FileMode.Open, FileAccess.Read))
             using (var image = new Bitmap(pngStream))
             {
-                int aspectX = Display.MapSqX, aspectY = Display.MapSqY;
-                int divisor = gcd(Display.MapSqX, Display.MapSqY);
-                if (divisor != 1)
-                {
-                    aspectX = division(Display.MapSqX, divisor);
-                    aspectY = division(Display.MapSqY, divisor);
-                }
+                int initWidth = image.Width, initHeight = image.Height;
+                double aspectRatio = (double)Display.MapSqX / Display.MapSqY;
+                int priRes = (initWidth > initHeight) ? initWidth : initHeight;
+                int secRes = (initWidth > initHeight) ? initHeight : initWidth;
+                int currRes = priRes / secRes, displayScale = 1;
+                double squareAmtX = (double)map.DistanceX / map.Scale;
+                double squareAmtY = (double)map.DistanceY / map.Scale;
+                double mostSqs = (squareAmtX > squareAmtY) ? squareAmtX : squareAmtY;
+                double sqPxls = (squareAmtX > squareAmtY) ?
+                    image.Width / squareAmtX :
+                    image.Height / squareAmtY;
 
-                aspectX *= Display.PixelDensity;
-                aspectY *= Display.PixelDensity;
-
-                int primaryAspect = (aspectX > aspectY) ? aspectX : aspectY;
-
-                int scaledMapRatio = (int)Math.Ceiling((double)image.Width / primaryAspect);
-
-                // amount of squares contained by each dimension
-                double squaresX = (double)map.DistanceX / map.Scale;
-                double squaresY = (double)map.DistanceY / map.Scale;
-
-                // amount of pixels per square when scaled
-                int sqPxlX = (int)Math.Ceiling(image.Width / squaresX);
-                int sqPxlY = (int)Math.Ceiling(image.Width / squaresY);
-
-                // total size of grid
-                int scaledSizeX = (int)(Display.PixelDensity * squaresX);
-                int scaledSizeY = (int)(Display.PixelDensity * squaresY);
-
-
-
-                Size newSize = new Size(aspectX * scaledMapRatio, aspectY * scaledMapRatio);
-                
-                // scales image to hold correct number of maps within aspect ratio
-                Bitmap firstResize = new Bitmap(image, newSize);
-
-                //Bitmap resizedImg = new Bitmap(scaledSizeX, scaledSizeY);
-                //gfx = Graphics.FromImage(firstResize);
-                //gfx.DrawImage(firstResize, map.RenderPoint);
-                string path = Path.Combine(DepoDirectory, @"Resized Maps", map.MapName + ".png");
-                firstResize.Save(path);
-                map.FilePath = path;
-            }
-        }
-
-        void SetMapFill(int initWidth, int initHeight, ResizedMap map, Image image)
-        {
-            int currRes = initWidth / initHeight;
-            double aspectRatio = (double)Display.MapSqX / Display.MapSqY;
-
-            // gets the next available resolution that stays within the correct aspect ratio
-            if ((double)initWidth / initHeight != aspectRatio || initWidth < Display.MinResX || initHeight < Display.MinResY)
-            {
-                // fit map by adding blank pixels
-                if (initWidth < Display.MinResX)
-                {
-                    initWidth = Display.MinResX;
-                }
-                if (initHeight < Display.MinResY)
-                {
-                    initHeight = Display.MinResY;
-                }
-                while ((double)initWidth / initHeight != aspectRatio)
+                // fix resolution scaling first
+                while ((double)priRes / secRes != aspectRatio)
                 {
                     currRes++;
-                    initWidth = currRes * Display.MapSqX * Display.PixelDensity;
-                    initHeight = currRes * Display.MapSqY * Display.PixelDensity;
+                    priRes = currRes * Display.MapSqX * Display.PixelDensity;
+                    secRes = currRes * Display.MapSqY * Display.PixelDensity;
                 }
 
-                int fillPixelsX = initWidth - image.Width;
-                int fillPixelsY = initHeight - image.Height;
+                double scaledX = squareAmtX * Display.PixelDensity;
+                double scaledY = squareAmtY * Display.PixelDensity;
+                while (scaledX * squareAmtX > initWidth || scaledY * squareAmtY > initHeight)
+                {
+                    displayScale *= 2;
+                    scaledX = (double)Display.PixelDensity / displayScale;
+                    scaledY = (double)Display.PixelDensity / displayScale;
+                }
 
-                Console.WriteLine("\nImage of " + image.Width + "x" + image.Height + " will be resized to " + initWidth + "x" + initHeight + ".");
-                Console.WriteLine("Scale original image or fill with blank space?");
-                Console.Write("\nSelect location on map to render blank space");
-                if (fillPixelsX > 0 && fillPixelsY > 0)
-                {
-                    Console.WriteLine("\n{0, -12} {1, 12}", "1: Top Left", "2: Top Right");
-                    Console.WriteLine("\n{0, -12} {1, 12}", "3: Bottom Left", "4: Bottom Right");
-                    Console.Write("Other Input: Cancel\n\n Select: ");
+                Size gridSize = new Size((int)(scaledX * squareAmtX), (int)(scaledY * squareAmtY));
+                Bitmap gridResize = new Bitmap(image, gridSize);
+                SetMapFill(map, gridResize, currRes);
+                string path = Path.Combine(DepoDirectory, @"Resized Maps", map.MapName + ".png");
+                map.FilePath = path;
 
-                    switch (Console.ReadLine())
-                    {
-                        case "1":
-                            map.SetFill(fillPixelsX, fillPixelsY);
-                            break;
-                        case "2":
-                            map.SetFill(0, fillPixelsY);
-                            break;
-                        case "3":
-                            map.SetFill(fillPixelsX, 0);
-                            break;
-                        case "4":
-                            map.SetFill(0, 0);
-                            break;
-                        default:
-                            break;
-                    }
-                }
-                else if (fillPixelsX > 0)
-                {
-                    Console.Write("{0, -12} {0, 12}", "1: Left", "2: Right\n\n Select: ");
-                    switch (Console.ReadLine())
-                    {
-                        case "1":
-                            map.SetFill(fillPixelsX, 0);
-                            break;
-                        case "2":
-                            map.SetFill(0, 0);
-                            break;
-                        default:
-                            break;
-                    }
-                }
-                else if (fillPixelsY > 0)
-                {
-                    Console.Write("1: Top\n2: Bottom\n\nSelect: ");
-                    switch (Console.ReadLine())
-                    {
-                        case "1":
-                            map.SetFill(0, fillPixelsY);
-                            break;
-                        case "2":
-                            map.SetFill(0, 0);
-                            break;
-                        default:
-                            break;
-                    }
-                }
+                Bitmap canvas = new Bitmap(
+                    currRes * Display.MapSqX * Display.PixelDensity, 
+                    currRes * Display.MapSqY * Display.PixelDensity);
+                gfx = Graphics.FromImage(canvas);
+                gfx.DrawImage(gridResize, map.RenderPoint);
             }
-
         }
 
-        public void AddTiledMap()
+        void SetMapFill(ResizedMap map, Bitmap image, int resScale)
         {
-            Console.WriteLine("Select image to tile from the \"Resized Maps\" folder.");
-            string imageSelect = Console.ReadLine();
-            string filePath = Path.Combine(DepoDirectory, @"Resized Maps", imageSelect + ".png");
-            if (File.Exists(filePath))
+
+            int fillPixelsX = (resScale * Display.MapSqX * Display.PixelDensity) - image.Width;
+            int fillPixelsY = (resScale * Display.MapSqY * Display.PixelDensity) - image.Height;
+
+            Console.WriteLine("\nImage of " + image.Width + "x" + image.Height + " will be resized to "
+                + image.Width + fillPixelsX + "x" + image.Height + fillPixelsY + ".");
+            Console.WriteLine("Scale original image or fill with blank space?");
+            Console.Write("\nSelect location on map to render blank space");
+            if (fillPixelsX > 0 && fillPixelsY > 0)
             {
-                List<JObject> mapNames = new List<JObject>();
-                JToken mapName;
-                foreach (JObject obj in MapArray)
+                Console.WriteLine("\n{0, -12} {1, 12}", "1: Top Left", "2: Top Right");
+                Console.WriteLine("\n{0, -12} {1, 12}", "3: Bottom Left", "4: Bottom Right");
+                Console.Write("Other Input: Cancel\n\n Select: ");
+
+                switch (Console.ReadLine())
                 {
-                    mapName = obj.GetValue("FilePath");
-                    if ((string)mapName == filePath)
-                    {
-                        mapNames.Add(obj);
-                    }
+                    case "1":
+                        map.SetFill(fillPixelsX, fillPixelsY);
+                        break;
+                    case "2":
+                        map.SetFill(0, fillPixelsY);
+                        break;
+                    case "3":
+                        map.SetFill(fillPixelsX, 0);
+                        break;
+                    case "4":
+                        map.SetFill(0, 0);
+                        break;
+                    default:
+                        break;
                 }
-                if (mapNames.Count > 1)
+            }
+            else if (fillPixelsX > 0)
+            {
+                Console.Write("{0, -12} {0, 12}", "1: Left", "2: Right\n\n Select: ");
+                switch (Console.ReadLine())
                 {
-                    Console.WriteLine("This image is used by other maps, select which map info to use: ");
-                    int i;
-                    for (i = 0; i < mapNames.Count; i++)
+                    case "1":
+                        map.SetFill(fillPixelsX, 0);
+                        break;
+                    case "2":
+                        map.SetFill(0, 0);
+                        break;
+                    default:
+                        break;
+                }
+            }
+            else if (fillPixelsY > 0)
+            {
+                Console.Write("1: Top\n2: Bottom\n\nSelect: ");
+                switch (Console.ReadLine())
+                {
+                    case "1":
+                        map.SetFill(0, fillPixelsY);
+                        break;
+                    case "2":
+                        map.SetFill(0, 0);
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+
+    public void AddTiledMap()
+    {
+        Console.WriteLine("Select image to tile from the \"Resized Maps\" folder.");
+        string imageSelect = Console.ReadLine();
+        string filePath = Path.Combine(DepoDirectory, @"Resized Maps", imageSelect + ".png");
+        if (File.Exists(filePath))
+        {
+            List<JObject> mapNames = new List<JObject>();
+            JToken mapName;
+            foreach (JObject obj in MapArray)
+            {
+                mapName = obj.GetValue("FilePath");
+                if ((string)mapName == filePath)
+                {
+                    mapNames.Add(obj);
+                }
+            }
+            if (mapNames.Count > 1)
+            {
+                Console.WriteLine("This image is used by other maps, select which map info to use: ");
+                int i;
+                for (i = 0; i < mapNames.Count; i++)
+                {
+                    Console.WriteLine("{0}: {1}", i + 1, mapNames[i]["MapName"]);
+                }
+                Console.WriteLine("{0}: {1}", i + 1, "Create new map info");
+                try
+                {
+                    int select = Convert.ToInt32(Console.ReadLine());
+                    if (select > 0 && select < mapNames.Count + 1)
                     {
-                        Console.WriteLine("{0}: {1}", i + 1, mapNames[i]["MapName"]);
+                        ResizedMap resizedMap = mapNames[select - 1].ToObject<ResizedMap>();
+                        TileMap(resizedMap);
                     }
-                    Console.WriteLine("{0}: {1}", i + 1, "Create new map info");
-                    try
+                    else if (select == mapNames.Count + 1)
                     {
-                        int select = Convert.ToInt32(Console.ReadLine());
-                        if (select > 0 && select < mapNames.Count + 1)
+                        ResizedMap resizedMap = new ResizedMap();
+                        if (resizedMap.PromptMapInfo())
                         {
-                            ResizedMap resizedMap = mapNames[select - 1].ToObject<ResizedMap>();
                             TileMap(resizedMap);
                         }
-                        else if (select == mapNames.Count + 1)
-                        {
-                            ResizedMap resizedMap = new ResizedMap();
-                            if (resizedMap.PromptMapInfo())
-                            {
-                                TileMap(resizedMap);
-                            }
-                        }
-                        else
-                        {
-                            Console.WriteLine("Invalid selection.");
-                            return;
-                        }
                     }
-                    catch (FormatException)
+                    else
                     {
-                        Console.WriteLine("ERROR: Invalid int.");
+                        Console.WriteLine("Invalid selection.");
                         return;
                     }
                 }
-                else if (mapNames.Count == 1)
+                catch (FormatException)
                 {
-                    ResizedMap resizedMap = mapNames[0].ToObject<ResizedMap>();
-                    TileMap(resizedMap);
-                }
-                else
-                {
-                    Console.WriteLine("No map info found for this image. Please enter it now.");
-                    ResizedMap resizedMap = new ResizedMap();
-                    if (resizedMap.PromptMapInfo())
-                    {
-                        TileMap(resizedMap);
-                    }
+                    Console.WriteLine("ERROR: Invalid int.");
+                    return;
                 }
             }
-        }
-
-        public void TileMap(ResizedMap oldMap)
-        {
-            TiledMap map = new TiledMap(oldMap, Display.MapSqX, Display.MapSqY);
-            Console.WriteLine("Scale for tiled maps: ");
-
-            int num;
-            string input = Console.ReadLine();
-            if (map.CheckValidMapInput(input, out num, 1, true) && map.Scale > num)
+            else if (mapNames.Count == 1)
             {
-                map.Scale = num;
+                ResizedMap resizedMap = mapNames[0].ToObject<ResizedMap>();
+                TileMap(resizedMap);
             }
             else
             {
-                Console.WriteLine("ERROR: Invalid scale.");
-                return;
-            }
-
-            map.TiledImageDirectory = Path.Combine(DepoDirectory, @"Tiled Maps", map.MapName);
-            Directory.CreateDirectory(map.TiledImageDirectory);
-
-            using (FileStream pngStream = new FileStream(oldMap.FilePath, FileMode.Open, FileAccess.Read))
-            using (var image = new Bitmap(pngStream))
-            {
-                PixelFormat format = image.PixelFormat;
-
-                for (int i = 0; i < map.TilesX; i++)
+                Console.WriteLine("No map info found for this image. Please enter it now.");
+                ResizedMap resizedMap = new ResizedMap();
+                if (resizedMap.PromptMapInfo())
                 {
-                    for (int j = 0; j < map.TilesY; j++)
-                    {
-                        Rectangle cropArea = new Rectangle(i * (image.Width / map.TilesX), j * (image.Height / map.TilesY), (image.Width / map.TilesX), (image.Height / map.TilesY));
-                        image.Clone(cropArea, format).Save(Path.Combine(map.TiledImageDirectory, map.MapName + "_" + i + "_" + j + ".png"));
-                    }
+                    TileMap(resizedMap);
                 }
-
-                // adds new serialized object to MapArray
-                AddMapJSON(map);
             }
         }
     }
+
+    public void TileMap(ResizedMap oldMap)
+    {
+        TiledMap map = new TiledMap(oldMap, Display.MapSqX, Display.MapSqY);
+        Console.WriteLine("Scale for tiled maps: ");
+
+        int num;
+        string input = Console.ReadLine();
+        if (map.CheckValidMapInput(input, out num, 1, true) && map.Scale > num)
+        {
+            map.Scale = num;
+        }
+        else
+        {
+            Console.WriteLine("ERROR: Invalid scale.");
+            return;
+        }
+
+        map.TiledImageDirectory = Path.Combine(DepoDirectory, @"Tiled Maps", map.MapName);
+        Directory.CreateDirectory(map.TiledImageDirectory);
+
+        using (FileStream pngStream = new FileStream(oldMap.FilePath, FileMode.Open, FileAccess.Read))
+        using (var image = new Bitmap(pngStream))
+        {
+            PixelFormat format = image.PixelFormat;
+
+            for (int i = 0; i < map.TilesX; i++)
+            {
+                for (int j = 0; j < map.TilesY; j++)
+                {
+                    Rectangle cropArea = new Rectangle(i * (image.Width / map.TilesX), j * (image.Height / map.TilesY), (image.Width / map.TilesX), (image.Height / map.TilesY));
+                    image.Clone(cropArea, format).Save(Path.Combine(map.TiledImageDirectory, map.MapName + "_" + i + "_" + j + ".png"));
+                }
+            }
+
+            // adds new serialized object to MapArray
+            AddMapJSON(map);
+        }
+    }
+}
 
 
 }
