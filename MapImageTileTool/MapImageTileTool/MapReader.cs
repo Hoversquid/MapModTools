@@ -296,7 +296,10 @@ namespace MapImageTileTool
                 double aspectRatio = (double)Display.MapSqX / Display.MapSqY;
                 int priRes = (initWidth > initHeight) ? initWidth : initHeight;
                 int secRes = (initWidth > initHeight) ? initHeight : initWidth;
-                int currRes = priRes / secRes, displayScale = 1;
+                int XRes = initWidth / (Display.MapSqX * Display.PixelDensity);
+                int YRes = initHeight / (Display.MapSqY * Display.PixelDensity);
+                int currRes = (XRes > YRes) ? XRes : YRes;
+                int displayScale = 1;
                 double squareAmtX = (double)map.DistanceX / map.Scale;
                 double squareAmtY = (double)map.DistanceY / map.Scale;
                 double mostSqs = (squareAmtX > squareAmtY) ? squareAmtX : squareAmtY;
