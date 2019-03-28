@@ -1,0 +1,62 @@
+﻿MegaBuilder(working title) Design Notes:
+
+
+Aspect Ratio:
+
+all maps all scales maintain aspect ratio of 18x12 (best fit for TTS's scale 18units = 1 inch)
+dimensionFactor: dimensionAspect x scale 
+stretch/compress: get both width/length and choose the one closest to their aspectFactor, change other measurement to stay in ratio
+fill: add blank pixels to complete map to fit ratio
+fill will meet default size or resolution one size above
+aspect ratio will be able to be changed when program moves away from being dependant on TTS (program settings file)
+
+5400 x 3600 
+3600 x 2400 default map resolution (200 ppi x (18x12) squares)
+
+number of scaled maps on display:
+maps that are tiled must be in correct ratio or have blank space added to end
+
+Adding Maps:
+
+save all map information in text file:
+
+(Map Name)
+(Scale)
+(Tiling)
+(SquaresX)
+(SquaresY)
+(OffsetX)
+(OffsetY)
+
+(best fit) 1024 x 1024 -> 1800 x 1200
+(size of scaled squares) 40 x 100 = 4000
+(display zoom x2) 40 x 50 = 2000
+(display x4) 40 x 25 = 1000
+
+find zoom based on the best fit for the initial resize
+
+Folder System:
+
+Source Image Folder, Resized-to-Aspect Images, Tiled Image Folders, Display Info JSON, Map Info JSON
+
+Map Scale:
+
+maps are contained in folders, folders contain JSON file that holds scale information and map info
+going up and down a "zlevel" will go to next available scale
+scaled down maps will need offsets to fit under the grid set by the higher-scale maps
+offsets are given as map lengths (X: map widths, Y: map heights)
+
+Map Info:
+
+map sets save all the information for map and scale
+mapObjects are created when image is tiled and added to JSONArray
+
+TTS Tiling:
+
+each image has its own tile, JSON array will be used to select map, Z-level, and grid area
+main display board must be tracked and swapped
+
+Loot Generation: (MUCH LATER)
+
+importing JSON with logic to generate loot
+player-selection loot tables can be made as physical tiles in TTS
