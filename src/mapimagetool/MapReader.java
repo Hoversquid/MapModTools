@@ -11,7 +11,10 @@ import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Scanner;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.json.simple.*;
+import org.json.simple.parser.*;
 
 /**
  *
@@ -23,7 +26,9 @@ public class MapReader {
     public Path DepoDirectory;
     public DisplayInfo Display;
     public JSONArray MapArray;
-    Scanner scanner;
+
+    private Scanner scanner;
+    private JSONParser parser = new JSONParser();
 
     public MapReader() {
         scanner = new Scanner(System.in);
@@ -64,11 +69,11 @@ public class MapReader {
             } else if (depoSelect == i + 1) {
                 CreateDepo();
             } else {
-                DepoDirectory = Paths.get(depoList.get(i-1).getAbsolutePath());
+                DepoDirectory = Paths.get(depoList.get(i - 1).getAbsolutePath());
             }
 
             System.out.printf("Selecting %s%n", DepoDirectory.toString());
-            //SetDepoInfo()
+            SetDepoInfo();
             //OpenMainMenu()
 
         }
@@ -84,54 +89,76 @@ public class MapReader {
         new File(Paths.get(DepoDirectory.toString(), "Source Images").toString()).mkdir();
         new File(Paths.get(DepoDirectory.toString(), "Resized Maps").toString()).mkdir();
         new File(Paths.get(DepoDirectory.toString(), "Tiled Maps").toString()).mkdir();
-        
+
     }
 
     public void OpenMainMenu() {
 
     }
 
-    public boolean SetDepoInfo() { 
+    public boolean SetDepoInfo() {
         if (DepoDirectory == null) {
             System.out.println("ERROR: Map Folder directory has not been set.");
             return false;
+
         } else {
             File infoFile = new File(Paths.get(DepoDirectory.toString(), "DisplayInfo.JSON").toString());
             if (infoFile.exists()) {
+
                 // set DisplayInfo to base type
+                try {
+
+                    Object obj = parser.parse(new FileReader(infoFile));
+                    Display = (DisplayInfo) obj;
+                    System.out.println(Display.MapSqX);
+                    System.out.println(Display.MapSqY);
+
+                    //JSONObject jsonObject = (JSONObject) obj;
+                } catch (FileNotFoundException e) {
+
+                } catch (IOException e) {
+
+                } catch (ParseException e) {
+
+                }
+
             } else {
                 // set JSON object to deserialized file
-            }
+                String JSONstring = "{\nMaps: []\n}";
+                try (Writer writer = new BufferedWriter(new FileOutputStream("test.txt"), "utf-8"))) {
+                    
+                }  catch (IOException ex) {
+                    Logger.getLogger(MapReader.class.getName()).log(Level.SEVERE, null, ex);
+                }
         }
         return true;
     }
-    
+
     public void AddMapJSON() {
-        
+
     }
-    
+
     // public String ReadFilesInDirectory(String path) { } 
-    
     public void AddResizedMap() {
-        
+
     }
-    
+
     public void ResizeMap() {
-        
+
     }
-    
+
     public void SetMapFill() {
-        
+
     }
-    
+
     public void AddTiledMap() {
         // needs to be updated from original file
     }
-    
+
     public void TileMap() {
         // needs to be updated from original file
     }
-    
+
     public static boolean isInteger(String str) {
         int length = str.length();
         if (str == null) {
