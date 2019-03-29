@@ -15,6 +15,7 @@ public class DisplayInfo {
     public int MapSqY;
     public int MinResX;
     public int MinResY;
+    
     public DisplayInfo()
     {
         PixelDensity = 100;

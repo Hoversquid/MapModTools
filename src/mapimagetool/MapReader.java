@@ -31,7 +31,7 @@ public class MapReader {
         File startDepo = new File(StartDirectory.toString());
         startDepo.mkdirs();
         DepoDirectory = null;
-        ArrayList<File> depoList = new ArrayList<File>(Arrays.asList(startDepo.listFiles()));
+        var depoList = new ArrayList<File>(Arrays.asList(startDepo.listFiles()));
         if (depoList.size() < 1) {
             System.out.printf("No map depo folders found in base directory.%nCreate new one? (Y or N): ");
             switch (scanner.nextLine().toUpperCase()) {
@@ -101,6 +101,8 @@ public class MapReader {
                 // set DisplayInfo to base type
             } else {
                 // set JSON object to deserialized file
+                
+                
             }
         }
         return true;
