@@ -25,6 +25,7 @@ public class FMXLDisplay extends Application {
     public static void main(String[] args) {
         //ButtonExample ex = new ButtonExample();
         //MapReader reader = new MapReader();
+        //test
         launch(args);
         
         System.exit(0);
